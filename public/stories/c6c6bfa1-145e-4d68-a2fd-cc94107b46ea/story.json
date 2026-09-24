@@ -1,5 +1,5 @@
 {
-  "version": "0.5",
+  "version": "0.6",
   "body": {
     "id": "c6c6bfa1-145e-4d68-a2fd-cc94107b46ea",
     "title": "Guardians of the First Light",
@@ -31,9 +31,8 @@
                 "artwork": {
                   "transition": {
                     "direction": "out",
-                    "presentation": "crop",
-                    "outRange": [0.18, 0.73],
-                    "focus": { "x": 0.5, "y": 0.48 }
+                    "presentation": "fit",
+                    "outRange": [0.18, 0.68]
                   }
                 }
               }
@@ -59,14 +58,6 @@
                 "aspectRatio": 0.705379,
                 "cardGeometry": {
                   "artWindow": { "x": 0.076, "y": 0.094, "width": 0.849, "height": 0.372 }
-                },
-                "artwork": {
-                  "transition": {
-                    "direction": "out",
-                    "presentation": "crop",
-                    "outRange": [0.18, 0.73],
-                    "focus": { "x": 0.5, "y": 0.5 }
-                  }
                 }
               }
             ]
@@ -91,14 +82,6 @@
                 "aspectRatio": 0.709046,
                 "cardGeometry": {
                   "artWindow": { "x": 0.076, "y": 0.095, "width": 0.848, "height": 0.37 }
-                },
-                "artwork": {
-                  "transition": {
-                    "direction": "out",
-                    "presentation": "crop",
-                    "outRange": [0.18, 0.73],
-                    "focus": { "x": 0.5, "y": 0.52 }
-                  }
                 }
               }
             ]

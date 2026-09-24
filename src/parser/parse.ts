@@ -86,9 +86,15 @@ export function parseStory(input: unknown): NormalizedStory {
             issue('cardGeometry/artWindow', 'The artwork window must fit within the normalized card bounds.');
           }
           if (frame.artwork?.transition) {
-            if (document.version !== '0.5') issue('artwork/transition', 'Standard-card OUT + CROP requires document version 0.5.');
-            const [start, end] = frame.artwork.transition.outRange ?? [0.18, 0.73];
-            if (start >= end) issue('artwork/transition/outRange', 'OUT + CROP range start must be less than its end.');
+            const transition = frame.artwork.transition;
+            const presentation = transition.presentation;
+            if (presentation === 'crop' && !['0.5', '0.6'].includes(document.version)) issue('artwork/transition', 'Standard-card OUT + CROP requires document version 0.5 or later.');
+            if (presentation === 'fit' && document.version !== '0.6') issue('artwork/transition', 'Standard-card OUT + FIT requires document version 0.6.');
+            if (document.version !== '0.6' && transition.scrollMode) issue('artwork/transition/scrollMode', 'scrollMode requires document version 0.6.');
+            if (presentation === 'fit' && transition.focus) issue('artwork/transition/focus', 'OUT + FIT does not accept a focus point.');
+            const [start, end] = transition.outRange ?? (presentation === 'fit' ? [0.18, 0.68] : [0.18, 0.73]);
+            if (start >= end) issue('artwork/transition/outRange', 'OUT transition range start must be less than its end.');
+            if (presentation === 'fit' && !['auto', 'content'].includes(item.height?.mode ?? 'auto')) issue('artwork/transition', 'OUT + FIT requires a Panel with auto or content height.');
           }
         }
         if (frame.type !== 'background' && flow !== 'normal' && !frame.position) issue('position', 'Overlay and overflow Frames require a position.');

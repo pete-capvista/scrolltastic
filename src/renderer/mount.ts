@@ -9,7 +9,8 @@ export interface MountOptions { assetBaseUrl: string; onLayout?: () => void }
 export type ScrollAnimationTarget =
   | { kind: 'reveal'; panel: HTMLElement; content: HTMLElement; config: RevealAnimation }
   | { kind: 'pull-focus'; panel: HTMLElement; placement: HTMLElement; content: HTMLElement; shape: MaskShape; range: [number, number] }
-  | { kind: 'card-out-crop'; panel: HTMLElement; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: CardFrame['cardGeometry']['artWindow']; range: [number, number]; focus: { x: number; y: number } };
+  | { kind: 'card-out-crop'; panel: HTMLElement; pinElement?: HTMLElement; scrollMode: 'pin' | 'flow'; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: CardFrame['cardGeometry']['artWindow']; range: [number, number]; focus: { x: number; y: number } }
+  | { kind: 'card-out-fit'; panel: HTMLElement; pinElement?: HTMLElement; scrollMode: 'pin' | 'flow'; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: CardFrame['cardGeometry']['artWindow']; aspectRatio: number; range: [number, number] };
 export interface StoryHandle {
   ready: Promise<void>;
   elements: ReadonlyMap<string, HTMLElement>;
@@ -17,6 +18,36 @@ export interface StoryHandle {
   destroy(): void;
 }
 const mounts = new WeakMap<HTMLElement, StoryHandle>();
+
+function wrapStoryPrefixThrough(body: HTMLElement, panel: HTMLElement) {
+  const container = panel.parentElement;
+  if (!container?.classList.contains('story-container') || container.parentElement !== body) {
+    throw new Error('Pinned transitions require a Panel directly within a story Container.');
+  }
+  const prefix = document.createElement('div');
+  prefix.className = 'story-pin-prefix';
+  let node = body.firstChild;
+  while (node && node !== container) {
+    const next = node.nextSibling;
+    prefix.append(node);
+    node = next;
+  }
+  const nextContainer = container.nextSibling;
+  const suffixContainer = container.cloneNode(false) as HTMLElement;
+  let passedPanel = false;
+  let child = container.firstChild;
+  while (child) {
+    const next = child.nextSibling;
+    if (passedPanel) suffixContainer.append(child);
+    else if (child === panel) passedPanel = true;
+    child = next;
+  }
+  prefix.append(container);
+  if (suffixContainer.firstChild) body.insertBefore(suffixContainer, nextContainer);
+  const insertionPoint = suffixContainer.firstChild ? suffixContainer : nextContainer;
+  body.insertBefore(prefix, insertionPoint);
+  return prefix;
+}
 
 export function mountStory(root: HTMLElement, input: unknown, options: MountOptions): StoryHandle {
   const story = parseStory(input);
@@ -52,6 +83,7 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
       elements.set(item.id, panel);
       applyPanelHeight(panel, item.height);
       let cardTransitionLayer: HTMLElement | undefined;
+      let cardFitTransitionLayer: HTMLElement | undefined;
       for (const frame of item.frames) {
         const slot = renderFrame(frame, options.assetBaseUrl);
         panel.append(slot);
@@ -69,30 +101,57 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
           const mask = slot.querySelector<HTMLElement>('.card-art-mask');
           const source = mask?.querySelector<HTMLImageElement>('.card-art-source');
           if (front && mask && source) {
-            if (!cardTransitionLayer) {
-              cardTransitionLayer = document.createElement('div');
-              cardTransitionLayer.className = 'panel-card-transitions';
-              cardTransitionLayer.setAttribute('aria-hidden', 'true');
+            const isFit = frame.artwork.transition.presentation === 'fit';
+            let transitionLayer = isFit ? cardFitTransitionLayer : cardTransitionLayer;
+            if (!transitionLayer) {
+              transitionLayer = document.createElement('div');
+              transitionLayer.className = `panel-card-transitions${isFit ? ' panel-card-transitions--fit' : ''}`;
+              transitionLayer.setAttribute('aria-hidden', 'true');
+              if (isFit) cardFitTransitionLayer = transitionLayer;
+              else cardTransitionLayer = transitionLayer;
             }
             mask.remove();
-            cardTransitionLayer.append(mask);
-            animations.push({
-              kind: 'card-out-crop', panel, front, mask, source,
-              artWindow: frame.cardGeometry.artWindow,
-              range: frame.artwork.transition.outRange ?? [0.18, 0.73],
-              focus: frame.artwork.transition.focus ?? { x: 0.5, y: 0.5 },
-            });
+            transitionLayer.append(mask);
+            if (isFit) {
+              animations.push({
+                kind: 'card-out-fit', panel, front, mask, source,
+                scrollMode: story.version === '0.6' ? frame.artwork.transition.scrollMode ?? 'pin' : 'flow',
+                artWindow: frame.cardGeometry.artWindow,
+                aspectRatio: frame.aspectRatio,
+                range: frame.artwork.transition.outRange ?? [0.18, 0.68],
+              });
+            } else {
+              animations.push({
+                kind: 'card-out-crop', panel, front, mask, source,
+                scrollMode: story.version === '0.6' ? frame.artwork.transition.scrollMode ?? 'pin' : 'flow',
+                artWindow: frame.cardGeometry.artWindow,
+                range: frame.artwork.transition.outRange ?? [0.18, 0.73],
+                focus: frame.artwork.transition.focus ?? { x: 0.5, y: 0.5 },
+              });
+            }
           }
         }
         if (frame.id) elements.set(frame.id, slot);
       }
+      const transitionZ = item.frames.find(frame => frame.type === 'card' && frame.artwork?.transition)?.position?.z ?? 15;
       if (cardTransitionLayer) {
-        cardTransitionLayer.style.zIndex = String(item.frames.find(frame => frame.type === 'card' && frame.artwork?.transition)?.position?.z ?? 15);
+        cardTransitionLayer.style.zIndex = String(transitionZ);
         panel.append(cardTransitionLayer);
+      }
+      if (cardFitTransitionLayer) {
+        cardFitTransitionLayer.style.zIndex = String(transitionZ);
+        panel.append(cardFitTransitionLayer);
       }
       section.append(panel);
     }
     body.append(section);
+  }
+  const pinPrefixes = new Map<HTMLElement, HTMLElement>();
+  for (const target of animations) {
+    if ((target.kind === 'card-out-crop' || target.kind === 'card-out-fit') && target.scrollMode === 'pin') {
+      target.pinElement = pinPrefixes.get(target.panel) ?? wrapStoryPrefixThrough(body, target.panel);
+      pinPrefixes.set(target.panel, target.pinElement);
+    }
   }
   // Validate and construct before replacing an existing readable story.
   mounts.get(root)?.destroy();

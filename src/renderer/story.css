@@ -3,6 +3,9 @@
 .story-title { margin: 0; padding: 2rem 1.4rem; font-size: clamp(2rem, 7vw, 3.5rem); line-height: 1.05; background: #f7f4eb; font-weight: 400; letter-spacing: -.04em; }
 .story-container { position: relative; isolation: isolate; width: 100%; }
 .story-panel { position: relative; width: 100%; }
+.story-pin-prefix { position: relative; }
+.story-pin-prefix[data-story-prefix-pinned='true'],
+.story-pin-prefix[data-story-prefix-art-active='true'] { z-index: 50; }
 .story-space { position: relative; width: 100%; }
 .frame-slot--normal { position: relative; display: flow-root; clip-path: inset(0); }
 .frame-slot--overlay, .frame-slot--overflow { position: absolute; inset: 0; pointer-events: none; }
@@ -22,6 +25,7 @@
 .frame-content--card { position: relative; overflow: hidden; border-radius: .9rem; filter: drop-shadow(0 1rem 1.6rem rgb(0 0 0 / 24%)); }
 .frame-content--card img { position: absolute; inset: 0; }
 .panel-card-transitions { position: absolute; inset: 0; overflow: clip; pointer-events: none; }
+.panel-card-transitions--fit { overflow: visible; }
 .card-art-mask { position: absolute; overflow: hidden; opacity: 0; visibility: hidden; }
 .card-art-source { position: absolute; max-width: none; object-fit: fill; }
 .frame-content--narrative, .frame-content--dialogue { padding: 1.2rem 1.35rem; font-size: clamp(1rem, 3.9vw, 1.3rem); line-height: 1.5; overflow-wrap: anywhere; }
