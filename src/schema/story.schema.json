@@ -1,0 +1,477 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StoryDocument",
+  "description": "Scrolltastic static renderer contract 0.1. Unsupported capabilities are rejected.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "body": {
+      "$ref": "#/definitions/Body"
+    }
+  },
+  "required": [
+    "version",
+    "body"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+    },
+    "Length": {
+      "type": "string",
+      "pattern": "^(?:0|(?:[0-9]+(?:\\.[0-9]+)?)(?:px|rem|vw|vh|svh|dvh))$"
+    },
+    "Size": {
+      "type": "string",
+      "pattern": "^(?:0|(?:[0-9]+(?:\\.[0-9]+)?)(?:px|rem|vw|vh|svh|dvh|%))$"
+    },
+    "Offset": {
+      "type": "string",
+      "pattern": "^(?:0|-?(?:[0-9]+(?:\\.[0-9]+)?)(?:px|rem|vw|vh|svh|dvh|%))$"
+    },
+    "Asset": {
+      "type": "string",
+      "pattern": "^assets/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.(?:svg|png|jpg|jpeg|webp|avif)$"
+    },
+    "Position": {
+      "type": "object",
+      "properties": {
+        "anchor": {
+          "type": "string",
+          "enum": [
+            "top-left",
+            "top",
+            "top-right",
+            "left",
+            "center",
+            "right",
+            "bottom-left",
+            "bottom",
+            "bottom-right"
+          ]
+        },
+        "x": {
+          "$ref": "#/definitions/Offset"
+        },
+        "y": {
+          "$ref": "#/definitions/Offset"
+        },
+        "width": {
+          "$ref": "#/definitions/Size"
+        },
+        "height": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Size"
+            },
+            {
+              "type": "string",
+              "const": "auto"
+            }
+          ]
+        },
+        "z": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "anchor"
+      ],
+      "additionalProperties": false
+    },
+    "Height": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "auto"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "content"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "viewport"
+            },
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 10
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "fixed"
+            },
+            "value": {
+              "$ref": "#/definitions/Length"
+            }
+          },
+          "required": [
+            "mode",
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "type": "object",
+      "discriminator": {
+        "propertyName": "mode"
+      }
+    },
+    "BackgroundFrame": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "flow": {
+          "type": "string",
+          "const": "overlay"
+        },
+        "position": {
+          "$ref": "#/definitions/Position"
+        },
+        "type": {
+          "type": "string",
+          "const": "background"
+        },
+        "asset": {
+          "$ref": "#/definitions/Asset"
+        },
+        "fit": {
+          "type": "string",
+          "enum": [
+            "cover",
+            "contain"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "asset"
+      ],
+      "additionalProperties": false
+    },
+    "ImageFrame": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "flow": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "overlay",
+            "overflow"
+          ]
+        },
+        "position": {
+          "$ref": "#/definitions/Position"
+        },
+        "type": {
+          "type": "string",
+          "const": "image"
+        },
+        "asset": {
+          "$ref": "#/definitions/Asset"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "aspectRatio": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "fit": {
+          "type": "string",
+          "enum": [
+            "contain",
+            "cover",
+            "width"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "asset",
+        "alt",
+        "aspectRatio"
+      ],
+      "additionalProperties": false
+    },
+    "NarrativeFrame": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "flow": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "overlay",
+            "overflow"
+          ]
+        },
+        "position": {
+          "$ref": "#/definitions/Position"
+        },
+        "type": {
+          "type": "string",
+          "const": "narrative"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "shape": {
+          "type": "string",
+          "const": "oblong"
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "DialogueFrame": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "flow": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "overlay",
+            "overflow"
+          ]
+        },
+        "position": {
+          "$ref": "#/definitions/Position"
+        },
+        "type": {
+          "type": "string",
+          "const": "dialogue"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "shape": {
+          "type": "string",
+          "const": "fat-circle"
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "Frame": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/BackgroundFrame"
+        },
+        {
+          "$ref": "#/definitions/ImageFrame"
+        },
+        {
+          "$ref": "#/definitions/NarrativeFrame"
+        },
+        {
+          "$ref": "#/definitions/DialogueFrame"
+        }
+      ],
+      "type": "object",
+      "discriminator": {
+        "propertyName": "type"
+      }
+    },
+    "Panel": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "panel"
+        },
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "height": {
+          "$ref": "#/definitions/Height"
+        },
+        "frames": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Frame"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "frames"
+      ],
+      "additionalProperties": false
+    },
+    "Space": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "space"
+        },
+        "height": {
+          "$ref": "#/definitions/Length"
+        },
+        "background": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+      },
+      "required": [
+        "type",
+        "height"
+      ],
+      "additionalProperties": false
+    },
+    "Container": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "container"
+        },
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "seam": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "seamless"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        "flow": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/Panel"
+              },
+              {
+                "$ref": "#/definitions/Space"
+              }
+            ],
+            "type": "object",
+            "discriminator": {
+              "propertyName": "type"
+            }
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "flow"
+      ],
+      "additionalProperties": false
+    },
+    "Body": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "orientation": {
+          "type": "string",
+          "const": "portrait"
+        },
+        "motion": {
+          "type": "object",
+          "properties": {
+            "reducedMotion": {
+              "type": "string",
+              "const": "respect-system"
+            }
+          },
+          "required": [
+            "reducedMotion"
+          ],
+          "additionalProperties": false
+        },
+        "containers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Container"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "containers"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

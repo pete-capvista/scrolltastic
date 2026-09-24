@@ -1,0 +1,181 @@
+{
+  "version": "0.1",
+  "body": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "The light beyond the ridge",
+    "containers": [
+      {
+        "type": "container",
+        "id": "ridge",
+        "seam": {
+          "type": "seamless"
+        },
+        "flow": [
+          {
+            "type": "panel",
+            "id": "arrival",
+            "height": {
+              "mode": "content"
+            },
+            "frames": [
+              {
+                "id": "ridge-image",
+                "type": "image",
+                "asset": "assets/scene.svg",
+                "aspectRatio": 0.8,
+                "alt": "Moonlight falls across mountain ridges. A distant observatory sends a beam into the sky."
+              },
+              {
+                "type": "narrative",
+                "id": "opening",
+                "flow": "overlay",
+                "text": "Every night, the mountain sent a signal. Tonight, someone answered.",
+                "position": {
+                  "anchor": "bottom-left",
+                  "x": "5%",
+                  "y": "-6%",
+                  "width": "82%"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "24svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "observatory",
+            "height": {
+              "mode": "content"
+            },
+            "frames": [
+              {
+                "type": "dialogue",
+                "id": "question",
+                "flow": "overflow",
+                "text": "Did you see it too?",
+                "position": {
+                  "anchor": "top-right",
+                  "x": "-5%",
+                  "y": "-12%",
+                  "width": "54%",
+                  "z": 25
+                }
+              },
+              {
+                "id": "observatory-image",
+                "type": "image",
+                "asset": "assets/observatory.svg",
+                "aspectRatio": 1.3333333333333333,
+                "alt": "An open, glowing doorway beneath the green dome of an observatory."
+              },
+              {
+                "type": "narrative",
+                "id": "bridge",
+                "flow": "overflow",
+                "text": "The door had been closed for a hundred years.",
+                "position": {
+                  "anchor": "bottom-left",
+                  "x": "6%",
+                  "y": "3rem",
+                  "width": "82%"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "28svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "signal",
+            "height": {
+              "mode": "viewport",
+              "value": 0.7
+            },
+            "frames": [
+              {
+                "type": "background",
+                "asset": "assets/scene.svg"
+              },
+              {
+                "type": "narrative",
+                "id": "signal-text",
+                "flow": "overlay",
+                "text": "Beyond the glass, the sky was listening.",
+                "position": {
+                  "anchor": "center",
+                  "width": "80%"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "16svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "passage-start",
+            "height": {
+              "mode": "content"
+            },
+            "frames": [
+              {
+                "id": "passage-top",
+                "type": "image",
+                "asset": "assets/passage-1.svg",
+                "aspectRatio": 2,
+                "alt": "A bright pathway opens between dark walls."
+              }
+            ]
+          },
+          {
+            "type": "panel",
+            "id": "passage-end",
+            "height": {
+              "mode": "content"
+            },
+            "frames": [
+              {
+                "id": "passage-bottom",
+                "type": "image",
+                "asset": "assets/passage-2.svg",
+                "aspectRatio": 2,
+                "alt": "The same pathway continues uninterrupted into the light."
+              },
+              {
+                "type": "narrative",
+                "flow": "overlay",
+                "text": "And so we stepped inside.",
+                "position": {
+                  "anchor": "bottom",
+                  "y": "-12%",
+                  "width": "80%"
+                }
+              }
+            ]
+          },
+          {
+            "type": "panel",
+            "id": "ending",
+            "height": {
+              "mode": "content"
+            },
+            "frames": [
+              {
+                "type": "narrative",
+                "text": "Some stories begin when you reach the end.\n\n\u2014 The light beyond the ridge"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

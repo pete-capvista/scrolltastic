@@ -1,0 +1,8 @@
+:root { font-family: system-ui, sans-serif; color: #162d32; background: #e3e8e5; font-synthesis: none; }
+body { margin: 0; }
+#app { max-width: 720px; min-height: 100svh; margin: 0 auto; background: #fff; }
+.reader-message { padding: 18svh 1.75rem 4rem; }
+.reader-brand { font: 600 .72rem/1.5 system-ui, sans-serif; letter-spacing: .22em; }
+.reader-message h1 { max-width: 14ch; font: 400 clamp(2.5rem, 8vw, 4rem)/1.05 Georgia, serif; letter-spacing: -.035em; }
+.reader-message > p:last-child { max-width: 34ch; line-height: 1.6; }
+.reader-diagnostics { padding: 1rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }

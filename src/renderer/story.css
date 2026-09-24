@@ -1,0 +1,22 @@
+.story-body { width: 100%; color: #142f35; font-family: Georgia, 'Times New Roman', serif; }
+.story-body *, .story-body *::before, .story-body *::after { box-sizing: border-box; }
+.story-title { margin: 0; padding: 2rem 1.4rem; font-size: clamp(2rem, 7vw, 3.5rem); line-height: 1.05; background: #f7f4eb; font-weight: 400; letter-spacing: -.04em; }
+.story-container { position: relative; isolation: isolate; width: 100%; }
+.story-panel { position: relative; width: 100%; }
+.story-space { position: relative; width: 100%; }
+.frame-slot--normal { position: relative; display: flow-root; clip-path: inset(0); }
+.frame-slot--overlay, .frame-slot--overflow { position: absolute; inset: 0; pointer-events: none; }
+.frame-slot--overlay { clip-path: inset(0); }
+.frame-placement { position: relative; }
+.frame-slot--overlay > .frame-placement, .frame-slot--overflow > .frame-placement { position: absolute; }
+.frame-content { width: 100%; height: 100%; }
+.frame-content img { display: block; width: 100%; height: 100%; }
+.frame-content--image { position: relative; background: #e6e8e5; }
+.frame-content--image img { position: absolute; inset: 0; }
+.frame-slot--background .frame-placement { inset: 0; }
+.frame-content--background img { position: absolute; inset: 0; }
+.frame-content--narrative, .frame-content--dialogue { padding: 1.2rem 1.35rem; font-size: clamp(1rem, 3.9vw, 1.3rem); line-height: 1.5; overflow-wrap: anywhere; }
+.frame-content p { margin: 0; white-space: pre-wrap; }
+.frame-content--narrative { color: #fffdf5; background: #162d32; }
+.frame-content--dialogue { color: #162d32; background: #fffdf5; border: 1px solid #162d32; border-radius: 50%; padding: 1.6rem 1.5rem; text-align: center; }
+img[data-asset-state='error'] { color: #162d32; font: 1rem/1.5 system-ui, sans-serif; }

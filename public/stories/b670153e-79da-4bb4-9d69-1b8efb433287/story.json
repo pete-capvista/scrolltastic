@@ -1,0 +1,102 @@
+{
+  "version": "0.1",
+  "body": {
+    "id": "b670153e-79da-4bb4-9d69-1b8efb433287",
+    "title": "Where the tide turns",
+    "containers": [
+      {
+        "type": "container",
+        "id": "coast",
+        "flow": [
+          {
+            "type": "panel",
+            "id": "shore",
+            "height": {
+              "mode": "content"
+            },
+            "frames": [
+              {
+                "id": "coast-image",
+                "type": "image",
+                "asset": "assets/scene.svg",
+                "aspectRatio": 0.8,
+                "alt": "A white lighthouse stands above teal waves under a peach evening sky."
+              },
+              {
+                "type": "narrative",
+                "flow": "overlay",
+                "text": "At the edge of the map, we waited for the tide to turn.",
+                "position": {
+                  "anchor": "bottom-left",
+                  "x": "5%",
+                  "y": "-8%",
+                  "width": "85%"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "18svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "letter",
+            "height": {
+              "mode": "content"
+            },
+            "frames": [
+              {
+                "type": "narrative",
+                "id": "letter-text",
+                "text": "The keeper left no address.\nOnly a note: follow the water home."
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "12svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "horizon",
+            "height": {
+              "mode": "fixed",
+              "value": "420px"
+            },
+            "frames": [
+              {
+                "type": "background",
+                "asset": "assets/scene.svg"
+              },
+              {
+                "type": "dialogue",
+                "flow": "overlay",
+                "text": "There. A light.",
+                "position": {
+                  "anchor": "center",
+                  "width": "58%"
+                }
+              }
+            ]
+          },
+          {
+            "type": "panel",
+            "id": "coast-ending",
+            "height": {
+              "mode": "content"
+            },
+            "frames": [
+              {
+                "type": "narrative",
+                "text": "We would leave at first light.\n\n\u2014 Where the tide turns"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
