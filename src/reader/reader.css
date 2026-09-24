@@ -6,3 +6,41 @@ body { margin: 0; }
 .reader-message h1 { max-width: 14ch; font: 400 clamp(2.5rem, 8vw, 4rem)/1.05 Georgia, serif; letter-spacing: -.035em; }
 .reader-message > p:last-child { max-width: 34ch; line-height: 1.6; }
 .reader-diagnostics { padding: 1rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
+
+#app.landing-host {
+  max-width: none;
+  color: #f5f3ff;
+  background: #03030c;
+}
+.landing {
+  box-sizing: border-box;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4svh, 3rem) 1.5rem 3rem;
+  text-align: center;
+}
+.landing-logo {
+  display: block;
+  width: min(100%, 470px);
+  height: auto;
+  mix-blend-mode: screen;
+}
+.landing-content { max-width: 36rem; margin-top: .5rem; }
+.landing-content h1 {
+  max-width: 19ch;
+  margin: 0 auto;
+  font: 650 clamp(2rem, 5vw, 3rem)/1.12 system-ui, sans-serif;
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+.landing-content p {
+  max-width: 34ch;
+  margin: 1.25rem auto 0;
+  color: #bcb8d1;
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  line-height: 1.65;
+  text-wrap: balance;
+}

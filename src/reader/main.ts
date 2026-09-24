@@ -1,5 +1,6 @@
 import { mountStory, type StoryHandle } from '../renderer/mount';
 import { parseStory, StoryValidationError } from '../parser/parse';
+import { renderLanding } from './landing';
 import './reader.css';
 
 const root = document.querySelector<HTMLElement>('#app')!;
@@ -32,8 +33,9 @@ async function readRoute() {
   root.removeAttribute('aria-busy');
   delete root.dataset.ready;
   const path = location.pathname;
+  root.classList.toggle('landing-host', path === '/');
   if (path === '/') {
-    message('Every story starts with a link.', 'Open a story link or scan its QR code to begin reading.');
+    renderLanding(root);
     return;
   }
   const match = /^\/s\/([^/]+)\/?$/.exec(path);
