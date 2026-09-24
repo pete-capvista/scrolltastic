@@ -1,10 +1,10 @@
 # First renderer slice
 
-Status: static renderer, scroll reveals, Mask Frames, pull-focus, static standard Cards, OUT + CROP, OUT + FIT and IN + FIT are implemented through contract 0.7.
+Status: static renderer, scroll reveals, Mask Frames, pull-focus, static standard Cards, OUT + CROP, OUT + FIT, IN + FIT and BOTH + FIT, Beat resolution and Advance/Reverse controls are implemented through contract 0.14 (including keyboard, Flip, snapping, and tap-to-Advance).
 
 The canonical language and hosting contract are in
 [the design specification](../scrolltastic_design_spec_v4.md), especially
-sections 29–40 and 55–66. This document records the implemented renderer
+sections 29–40 and 55–71. This document records the implemented renderer
 boundaries and the capabilities deferred to subsequent slices.
 
 ## Agreed scope
@@ -35,6 +35,10 @@ published documents need an explicit compatibility or migration strategy.
 | `frames/` | Background, Image, Narrative, Dialogue, Mask and Card renderers. |
 | `layout/` | Height, placement, clipping and batched layout invalidation. |
 | `assets/` | Package-relative URLs, dimensions, readiness and failure handling. |
+| `animation/` | Scrubbed timelines, responsive/reduced-motion lifecycle and numeric scroll ranges. |
+| `beats/` | Coordinate resolution, stable ordering and an observable read-only Beat index. |
+| `interaction/` | Input-independent Advance/Reverse actions and destination tracking. |
+| `inputs/` | Accessible controls and interruption handling. |
 | Reader host | Route resolution, configuration loading and renderer lifecycle. |
 
 Tooling: Vite development host, Ajv runtime validation, unit
@@ -158,13 +162,13 @@ Panels move up underneath the pinned story prefix as its content-sized Panel
 contracts. FIT transitions introduced in 0.6 and 0.7 pin by default;
 `scrollMode: "flow"` opts out.
 
-Later slices add BOTH + FIT, Beat resolution and semantic Advance/Reverse
-before Flip recognition.
+Contract 0.11 adds scoped Arrow Down/Up input. Contract 0.12 adds touch Flip recognition on the story surface.
 
 ## Verification results
 
-- 19 unit tests pass for parsing, validation, fixture assets and package URL resolution.
-- 20 browser tests pass across mobile-emulated and desktop Chromium.
+- 44 unit tests pass for parsing, validation, fixture assets and package URL resolution.
+- 130 browser cases cover mobile-emulated and desktop Chromium, including
+  scoped keyboard navigation, touch Flip, native drag arbitration and controls-only compatibility.
 - Type checking, generated-type consistency and the production build pass.
 - Visual inspection confirms the portrait fixture, overflow captions and homepage render.
 - Valid story loads produce no browser console errors.
@@ -174,3 +178,85 @@ flow. It does not substitute for physical iOS Safari/Android testing.
 Vercel routing is configured but has not been deployed or verified on Vercel.
 Creator authentication, storage and publishing remain architectural contracts,
 not implemented backend features.
+
+
+Contract 0.8 adds BOTH + FIT as one scrubbed timeline with required IN,
+hold and OUT ranges. The Guardians fixture now opens with Lunora's complete
+artwork → Card → hold → artwork sequence; Dravion retains IN + FIT in flow
+mode. The pinned BOTH sequence reserves real scroll distance across all
+three phases. Reduced motion restores the static Cards.
+
+The BOTH + FIT browser checks cover all phases in pin/flow modes, reverse
+scrolling, resizing during the hold, live reduced-motion changes, route cleanup,
+short-story reachability and downstream reveal refresh.
+
+
+Contract 0.9 adds optional Element Beats to Panels/Frames and Timeline Beats
+to Card/Mask transitions. `beats/` owns pure coordinate resolution and the
+batched read-only index, while the animation layer publishes numeric ranges
+after refresh. `handle.beats`, `onBeatsChange` and `story:beats` expose the
+index to hosts without coupling it to an input adapter. The ridge fixture
+exercises an overflow Frame Beat and Mask timeline; Guardians exercises the
+pinned Card timeline. Reduced motion preserves IDs at Frame-center fallback
+destinations. The renderer performs no assisted scrolling or focus changes.
+
+Beat checks cover schema/version validation, ordering and clamping, pinned
+coordinates, Mask/Card timeline destinations, responsive recalculation,
+FIT layout updates, reduced-motion fallback, static embeds and teardown.
+
+
+Contract 0.10 adds `body.interaction.advance` with explicit opt-in. The pure
+`interaction/` controller selects destinations from the current scroll
+position, while `animation/assisted-scroll.ts` moves real document scroll
+and `inputs/controls.ts` supplies the reader's Previous/Next adapter. Hosts
+can reuse the controller with injected drivers and independent inputs.
+The reader reserves room for its control bar when resolving Element Beats.
+No input handler prevents continuous manual scrolling or moves DOM focus.
+Checks cover boundaries and coincident Beats, repeated/opposite requests,
+manual interruption, reduced motion, native button keyboard access, resize,
+route cleanup and Card timeline states.
+
+## Keyboard input (0.11)
+
+`advance.inputs` accepts controls alone or controls plus keyboard; omitted
+input selection retains the 0.10 default. `inputs/keyboard.ts` shares the
+controls adapter’s navigation controller and confines shortcuts to reader
+focus. It preserves editable/widget keys, modifiers, composition, native
+scrolling at boundaries, and focus during movement. Teardown restores the
+host tabindex. Both Beat fixtures enable the adapter.
+
+## Touch Flip (0.12)
+
+`inputs/flip.ts` adapts short native-direction touch flicks to the same
+Advance/Reverse actions. Pure threshold checks live in `flip-gesture.ts`.
+It claims only eligible first moves; native drags and wheel scrolling stay
+available. A captured fast start that becomes a long gesture falls back to
+continuous document dragging. Tests use Chromium touch injection to exercise
+actual default scrolling, plus validation and deterministic gesture checks.
+
+The early touch arbitration follows the [Touch Events default-action contract](https://www.w3.org/TR/touch-events/#the-touchmove-event): canceling the first move can prevent scrolling for that gesture. Gestures already owned by native scrolling are left alone.
+
+
+## Settled scroll snapping (0.13)
+
+The ridge now opts into `interaction.scroll.snap: "beats"`, with Flip removed
+from its input list. `inputs/scroll-snap.ts` observes native touch, wheel and
+scroll-end events; it never cancels touch movement. Held contact prevents a
+snap, momentum finishes first, and a new touch cancels assistance. The shared
+controller's `snap()` selects the nearest Beat and tracks its ID. Tests cover
+real browser dragging, paused contact, momentum, interruption, no self-snap
+loops, reduced motion, opt-out and pinned Card timelines.
+
+The native completion signal follows [document scrollend semantics](https://developer.mozilla.org/en-US/docs/Web/API/Document/scrollend_event).
+An idle timer supports browsers without that event. Flip regression tests
+now opt into the 0.12 policy explicitly instead of inheriting the ridge's
+current interaction policy.
+
+## Tap-to-Advance (0.14)
+
+The ridge now selects free scrolling plus tap-to-Advance. `inputs/tap.ts`
+observes short stationary primary-pointer contacts on noninteractive story
+content and invokes the existing Advance action. It never prevents native
+scrolling and ignores compatibility clicks, drags, long presses, selections
+and contacts that interrupt movement. Snap and Flip stay available as
+separately authored options; their regression fixtures select them explicitly.

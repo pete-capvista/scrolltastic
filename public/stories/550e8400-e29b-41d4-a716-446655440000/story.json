@@ -1,6 +1,20 @@
 {
-  "version": "0.3",
+  "version": "0.14",
   "body": {
+    "interaction": {
+      "advance": {
+        "enabled": true,
+        "mode": "beats",
+        "inputs": [
+          "controls",
+          "keyboard",
+          "tap"
+        ]
+      },
+      "scroll": {
+        "snap": "none"
+      }
+    },
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "title": "The light beyond the ridge",
     "containers": [
@@ -14,6 +28,10 @@
           {
             "type": "panel",
             "id": "arrival",
+            "beat": {
+              "id": "ridge-arrival",
+              "align": "start"
+            },
             "height": {
               "mode": "content"
             },
@@ -64,6 +82,11 @@
               {
                 "type": "dialogue",
                 "id": "question",
+                "beat": {
+                  "id": "doorway-question",
+                  "align": "center",
+                  "offset": "-8svh"
+                },
                 "flow": "overflow",
                 "text": "Did you see it too?",
                 "position": {
@@ -145,17 +168,50 @@
                 },
                 "shape": {
                   "type": "polygon",
-                  "points": [[0, 0.08], [0.88, 0], [1, 0.82], [0.12, 1]]
+                  "points": [
+                    [
+                      0,
+                      0.08
+                    ],
+                    [
+                      0.88,
+                      0
+                    ],
+                    [
+                      1,
+                      0.82
+                    ],
+                    [
+                      0.12,
+                      1
+                    ]
+                  ]
                 },
                 "content": {
                   "asset": "assets/observatory.svg",
                   "alt": "A closer view of the observatory doorway, framed by the signal's shifting light.",
                   "fit": "cover",
-                  "focus": { "x": 0.5, "y": 0.45 }
+                  "focus": {
+                    "x": 0.5,
+                    "y": 0.45
+                  }
                 },
                 "transition": {
                   "type": "pull-focus",
-                  "range": [0.18, 0.78]
+                  "range": [
+                    0.18,
+                    0.78
+                  ],
+                  "beats": [
+                    {
+                      "id": "signal-opening",
+                      "progress": 0.18
+                    },
+                    {
+                      "id": "signal-takeover",
+                      "progress": 0.78
+                    }
+                  ]
                 }
               },
               {
@@ -199,7 +255,11 @@
                 "aspectRatio": 2,
                 "alt": "A bright pathway opens between dark walls."
               }
-            ]
+            ],
+            "beat": {
+              "id": "passage-threshold",
+              "align": "start"
+            }
           },
           {
             "type": "panel",
@@ -223,9 +283,237 @@
                   "anchor": "bottom",
                   "y": "-12%",
                   "width": "80%"
+                },
+                "beat": {
+                  "id": "step-inside",
+                  "align": "center"
                 }
               }
             ]
+          },
+          {
+            "type": "space",
+            "height": "22svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "star-chamber",
+            "height": {
+              "mode": "content"
+            },
+            "beat": {
+              "id": "chamber-arrival",
+              "align": "start"
+            },
+            "frames": [
+              {
+                "type": "image",
+                "id": "chamber-image",
+                "asset": "assets/chamber.svg",
+                "aspectRatio": 0.8,
+                "alt": "A brass star map hangs above a stone lectern in a tall, vaulted chamber. A small gold light rests on the open page."
+              },
+              {
+                "type": "narrative",
+                "id": "chamber-caption",
+                "flow": "overflow",
+                "text": "Inside, the stars were arranged as they had been a hundred years ago. All but one.",
+                "position": {
+                  "anchor": "bottom-left",
+                  "x": "6%",
+                  "y": "2rem",
+                  "width": "84%"
+                },
+                "beat": {
+                  "id": "missing-star",
+                  "align": "center"
+                },
+                "scrollAnimation": {
+                  "type": "reveal"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "28svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "answering-voice",
+            "height": {
+              "mode": "fixed",
+              "value": "420px"
+            },
+            "frames": [
+              {
+                "type": "background",
+                "asset": "assets/chamber.svg"
+              },
+              {
+                "type": "dialogue",
+                "id": "chamber-reply",
+                "flow": "overlay",
+                "text": "\u201cWe did not send the signal,\u201d the room whispered. \u201cWe kept it safe for you.\u201d",
+                "position": {
+                  "anchor": "center",
+                  "width": "78%"
+                },
+                "beat": {
+                  "id": "the-answer",
+                  "align": "center"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "16svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "morning-window",
+            "height": {
+              "mode": "viewport",
+              "value": 0.85
+            },
+            "frames": [
+              {
+                "type": "background",
+                "asset": "assets/scene.svg"
+              },
+              {
+                "type": "mask",
+                "id": "dawn-mask",
+                "position": {
+                  "anchor": "center",
+                  "width": "54%",
+                  "height": "46%",
+                  "z": 15
+                },
+                "shape": {
+                  "type": "ellipse"
+                },
+                "content": {
+                  "asset": "assets/dawn.svg",
+                  "alt": "Sunlight reaches the valley beyond the observatory. A winding gold path leads down through the green mountain ridges.",
+                  "fit": "cover"
+                },
+                "transition": {
+                  "type": "pull-focus",
+                  "range": [
+                    0.15,
+                    0.8
+                  ],
+                  "beats": [
+                    {
+                      "id": "morning-glimpse",
+                      "progress": 0.15
+                    },
+                    {
+                      "id": "morning-opening",
+                      "progress": 0.48
+                    },
+                    {
+                      "id": "morning-takeover",
+                      "progress": 0.8
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "narrative",
+                "id": "window-caption",
+                "flow": "overflow",
+                "text": "The missing star was not in the sky. It was the first light of morning.",
+                "position": {
+                  "anchor": "bottom",
+                  "y": "2rem",
+                  "width": "84%"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "24svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "homeward-path",
+            "height": {
+              "mode": "content"
+            },
+            "beat": {
+              "id": "homeward-view",
+              "align": "center"
+            },
+            "frames": [
+              {
+                "type": "image",
+                "id": "dawn-image",
+                "asset": "assets/dawn.svg",
+                "aspectRatio": 0.8,
+                "alt": "Two small travelers follow the golden trail down into a valley at sunrise."
+              },
+              {
+                "type": "narrative",
+                "id": "homeward-caption",
+                "flow": "overlay",
+                "text": "By the time we found the path home, every window in the valley was shining.",
+                "position": {
+                  "anchor": "bottom",
+                  "y": "-8%",
+                  "width": "84%"
+                },
+                "beat": {
+                  "id": "valley-lights",
+                  "align": "center",
+                  "offset": "-4svh"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "18svh",
+            "background": "#ffffff"
+          },
+          {
+            "type": "panel",
+            "id": "keepers-promise",
+            "height": {
+              "mode": "content"
+            },
+            "frames": [
+              {
+                "type": "dialogue",
+                "id": "promise-question",
+                "text": "Will the mountain call again?",
+                "beat": {
+                  "id": "promise-question-moment",
+                  "align": "center"
+                }
+              },
+              {
+                "type": "narrative",
+                "id": "promise-answer",
+                "text": "Tonight, we would leave a light in the window.\n\nThis time, we would be ready to answer.",
+                "beat": {
+                  "id": "keepers-answer",
+                  "align": "end"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "20svh",
+            "background": "#ffffff"
           },
           {
             "type": "panel",
@@ -238,7 +526,11 @@
                 "type": "narrative",
                 "text": "Some stories begin when you reach the end.\n\n\u2014 The light beyond the ridge"
               }
-            ]
+            ],
+            "beat": {
+              "id": "ridge-ending",
+              "align": "end"
+            }
           }
         ]
       }

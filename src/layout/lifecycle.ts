@@ -13,6 +13,7 @@ export function watchLayout(root: HTMLElement, onLayout: () => void): LayoutLife
       frame = 0;
       if (!destroyed) {
         updateNormalClipping(root);
+        root.dispatchEvent(new CustomEvent('story:geometry'));
         // FIT transitions change Panel height on every scrub frame. Keep clipping
         // current, but avoid refreshing ScrollTrigger until that motion ends.
         if (!root.querySelector('.story-panel[data-card-fit-active="true"], .story-pin-prefix[data-story-prefix-pinned="true"]')) onLayout();

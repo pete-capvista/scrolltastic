@@ -76,6 +76,47 @@ describe('document contract', () => {
     crop.body.containers[0].flow[0].frames[0].artwork.transition.presentation = 'crop';
     expect(issues(crop).some(i => i.message.includes('IN + CROP'))).toBe(true);
   });
+  it('validates BOTH + FIT phases, version gates and incompatible options', () => {
+    const input: any = minimal();
+    input.version = '0.8';
+    const transition = { direction: 'both', presentation: 'fit', inRange: [.05, .3], holdRange: [.3, .62], outRange: [.62, .95] };
+    input.body.containers[0].flow[0].frames = [{
+      type: 'card', cardType: 'standard', asset: 'assets/card.svg', alt: 'Test card', aspectRatio: .7,
+      cardGeometry: { artWindow: { x: .1, y: .1, width: .8, height: .4 } },
+      artwork: { transition },
+    }];
+    expect(parseStory(input).version).toBe('0.8');
+    const change = (patch: object) => {
+      const copy = structuredClone(input);
+      Object.assign(copy.body.containers[0].flow[0].frames[0].artwork.transition, patch);
+      return copy;
+    };
+    expect(parseStory(change({ holdRange: [.4, .5] })).version).toBe('0.8');
+    for (const version of ['0.5', '0.6', '0.7']) {
+      expect(issues({ ...input, version }).some(i => i.message.includes('version 0.8'))).toBe(true);
+    }
+    for (const name of ['inRange', 'holdRange', 'outRange']) {
+      for (const range of [[.5, .5], [.8, .2], [-.1, .2], [.2, 1.1], [.2], [.1, .2, .3]]) {
+        expect(() => parseStory(change({ [name]: range }))).toThrow(StoryValidationError);
+      }
+      const copy = change({});
+      delete copy.body.containers[0].flow[0].frames[0].artwork.transition[name];
+      expect(() => parseStory(copy)).toThrow(StoryValidationError);
+    }
+    for (const patch of [
+      { holdRange: [.2, .6] }, { outRange: [.5, .9] },
+      { presentation: 'crop' }, { focus: { x: .5, y: .5 } }, { direction: 'in' }, { direction: 'out' },
+    ]) expect(() => parseStory(change(patch))).toThrow(StoryValidationError);
+    for (const height of [{ mode: 'fixed', value: '400px' }, { mode: 'viewport' }]) {
+      const copy = change({}); copy.body.containers[0].flow[0].height = height;
+      expect(issues(copy).some(i => i.message.includes('auto or content'))).toBe(true);
+    }
+    const multiple = change({});
+    multiple.body.containers[0].flow.push({ ...structuredClone(multiple.body.containers[0].flow[0]), id: 'second' });
+    expect(issues(multiple).some(i => i.message.includes('Only one pinned'))).toBe(true);
+    multiple.body.containers[0].flow[1].frames[0].artwork.transition.scrollMode = 'flow';
+    expect(parseStory(multiple).version).toBe('0.8');
+  });
   it('requires height-producing content and positions for overflow', () => {
     const doc: any = minimal();
     doc.body.containers[0].flow[0].height = { mode: 'content' };

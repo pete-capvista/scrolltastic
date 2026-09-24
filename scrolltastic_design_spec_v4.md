@@ -2800,3 +2800,333 @@ one pinned Card transition; other transitions must set `scrollMode: "flow"`.
 At the start of the range the full-width artwork is visible; after the range
 the physical card is visible. Reduced-motion mode leaves the accessible
 static Card Frame visible. IN + CROP and BOTH transitions remain unsupported.
+
+
+# 69. Standard Card BOTH + FIT Slice 0.8
+
+Version 0.8 adds BOTH + FIT: full-width artwork becomes a physical standard
+Card, holds, then returns to full-width artwork. Versions 0.1–0.7 retain
+their existing behavior. One coordinated, reversible scrubbed timeline
+controls the artwork clip, source transform, card opacity and Panel height.
+
+```json
+{
+  "artwork": {
+    "transition": {
+      "direction": "both",
+      "presentation": "fit",
+      "inRange": [0.05, 0.30],
+      "holdRange": [0.30, 0.62],
+      "outRange": [0.62, 0.95]
+    }
+  }
+}
+```
+
+All three ranges are required. Each is a normalized pair satisfying
+`0 <= start < end <= 1`, ordered without overlap:
+`inRange[1] <= holdRange[0]` and `holdRange[1] <= outRange[0]`.
+Adjacent endpoints may coincide. Gaps between phases retain the physical
+Card, extending its hold. Before IN and after OUT the full artwork remains
+visible. The Panel grows from artwork height to natural content height
+through IN, stays at natural height through the hold, and returns to
+artwork height through OUT. Following Panels stay in normal document flow.
+
+Geometry comes from the existing card-front asset, aspect ratio and
+normalized artwork window. The Panel must use `auto` or `content` height.
+BOTH + CROP and `focus` are invalid. `holdRange` is only accepted for BOTH.
+The story prefix pins across the complete IN-to-OUT interval by default,
+including the hold; as with IN + FIT, pin spacing reserves that interval
+as real document scroll distance. For a story shorter than a viewport, the
+Body reserves enough minimum height to reach OUT without moving downstream
+compositions or changing Panel heights. This reserve is removed with the pin.
+`scrollMode: "flow"` disables pinning and reserved distance. The existing one-pinned-Card-per-story limit applies.
+Reduced motion displays the static accessible Card at natural height;
+changing the preference removes/restores the timeline and pin. Responsive
+refresh remeasures both phases. No Beat or input semantics change.
+
+# 70. Beat Resolution Slice 0.9
+
+Version 0.9 adds optional authored Beats and a read-only runtime index.
+Documents without Beats retain their existing behavior. Advance, Reverse,
+controls, keyboard adapters and Flip remain subsequent slices.
+
+Panels and every supported Frame may declare one Element Beat:
+
+```json
+"beat": { "id": "doorway-moment", "align": "center", "offset": "-8svh" }
+```
+
+`id` is required and shares the document-wide ID namespace with all explicit
+Body, Container, Panel, Frame and Beat IDs. `align` defaults to `start`;
+`start`, `center` and `end` align matching points of the owning element and
+viewport. Frame geometry means its positioned composition box, including
+its anchor placement, rather than its full-Panel overlay slot or a text
+reveal's transformed inner wrapper. `offset` adds to the resolved scroll
+coordinate (positive values scroll further down). It defaults to zero and
+accepts signed px, rem, vw, vh, svh and dvh lengths, or unitless zero;
+percentages and CSS functions are unsupported.
+
+Card `artwork.transition` and Mask `transition` may declare a nonempty
+`beats` array. Each entry requires an ID and finite progress within 0–1:
+
+```json
+"beats": [
+  { "id": "artwork-opening", "progress": 0 },
+  { "id": "physical-card-hold", "progress": 0.45 },
+  { "id": "artwork-return", "progress": 0.95 }
+]
+```
+
+Progress maps to the owning visual timeline's full ScrollTrigger start/end
+interval, not its IN/OUT/pull-focus subrange or separate pin trigger.
+Timeline Beat arrays need not be sorted. A Timeline Beat has no alignment
+or offset. Beats on unsupported owners (Body, Container, Space, reveal
+animations or Panel-level timeline declarations) fail validation. Earlier
+contract versions reject Beat declarations; versions 0.1–0.8 otherwise
+remain valid, including all their existing Card modes.
+
+The resolver combines Element and Timeline Beats, clamps destinations to
+the document's reachable scroll extent, and sorts them by ascending
+scroll coordinate. Ties retain authored traversal order: Panel Beat,
+then each Frame's Element Beat followed by its transition Beats in array
+order. Coincident Beats retain separate IDs. The index recalculates after
+layout, viewport and motion-preference changes and completed ScrollTrigger
+refreshes, and as animated geometry changes through scrolling. It uses
+current measured geometry and removes pin displacement when resolving
+Elements within a pinned prefix. No scrolling or focus movement occurs.
+
+When animations are unavailable (including reduced motion and a static
+embed without animation attachment), Timeline Beats fall back to centering
+their owning Frame. Their IDs, source and progress remain present, with
+`fallback: true`; multiple moments may coincide. When animation returns,
+they resolve against the recreated timeline. This preserves destinations
+for the static story without inventing scroll-driven animation states.
+
+After `mountStory(...).ready`, `handle.beats` exposes an immutable array of
+`{ id, source, scrollY, order, element, fallback, progress? }`. `source` is
+`element` or `timeline`; `order` is the zero-based resolved order. Hosts can
+supply `onBeatsChange` or listen for the bubbling `story:beats` event (whose
+`detail` is the same array). Initial timeline fallback is replaced after
+animation initialization/refresh. The animation layer publishes only
+numeric ranges through a narrow bridge; the Beat resolver does not depend
+on GSAP. Destroying a mount empties its index and removes its observers,
+listeners and pending work. The host still owns animation attachment and
+must destroy that handle before destroying the mount, as the reader does.
+
+# 71. Advance / Reverse and Controls Slice 0.10
+
+Version 0.10 adds opt-in Beat navigation on Body:
+
+```json
+"interaction": {
+  "advance": { "enabled": true, "mode": "beats" }
+}
+```
+
+Both fields inside `advance` are required. Omission or `enabled: false`
+preserves unassisted continuous scrolling. Enabling navigation requires at
+least one authored Beat. Earlier versions reject `interaction`. Custom
+motion settings, input lists, keyboard shortcuts, Flip, and disabling
+continuous scroll are not supported in 0.10 and fail validation.
+
+Advance chooses the nearest resolved coordinate more than two CSS pixels
+after the current document scroll position; Reverse chooses the nearest
+coordinate more than two pixels before it. This tolerance handles fractional
+browser rounding and skips coincident destinations, including reduced-motion
+fallbacks and clamped story boundaries. Every Beat ID remains in the index.
+The current manual scroll position is authoritative. At a boundary, the
+unavailable action is a no-op; there is no wrapping or scroll trapping.
+
+Movement follows the selected Beat ID through subsequent layout updates.
+The driver uses GSAP to ease the real document scroll over approximately
+0.55 seconds, without changing GSAP timeline progress directly. Repeated
+requests in the same direction during a move are ignored. An opposite
+request cancels the move and resolves from the current position. Wheel,
+touch, pointer interaction outside the controls, native scroll keys and
+Escape interrupt assistance without cancelling the browser's default input.
+Unexpected native scrolling also yields control. Resize cancels the current
+move, refreshes destinations and leaves the next action ready. Reduced
+motion uses immediate scrolling to the destination. Focus never moves to a
+Beat automatically.
+
+The reader supplies a fixed Previous/Next button bar only for enabled
+stories. Buttons retain focus at boundaries using `aria-disabled` and
+remain operable with native Tab, Enter and Space behavior. The adapter
+reserves bottom document padding and supplies its measured height through
+`MountOptions.viewportBottomInset` (a callback, default zero). Element
+alignment and static timeline fallback use the remaining unobscured viewport;
+Timeline Beat progress still maps to the full owning ScrollTrigger interval.
+This host inset does not change authored Panel sizes or Frame geometry.
+Destinations remain clamped to the actual document scroll extent.
+
+`createBeatNavigation` in `interaction/navigation.ts` exposes `advance`,
+`reverse`, `cancel`, `update`, `subscribe` and `destroy` with injected Beat,
+scroll-position and driver dependencies. The browser scroll driver lives
+behind the animation layer; the visible controls are an input adapter.
+`StoryHandle.refreshBeats()` allows hosts to synchronously refresh the
+read-only index before an action. Static embedding remains possible without
+attaching navigation. Reader teardown cancels assistance and removes the
+control bar and its listeners before destroying animations and the mount.
+The ridge and Guardians fixtures opt in to exercise Element, Mask timeline
+and pinned Card timeline navigation together with manual scrolling.
+
+# 72. Keyboard Input Slice 0.11
+
+Version 0.11 adds optional `body.interaction.advance.inputs`:
+
+```json
+"interaction": {
+  "advance": {
+    "enabled": true,
+    "mode": "beats",
+    "inputs": ["controls", "keyboard"]
+  }
+}
+```
+
+The list must contain `controls` and may also contain `keyboard`, with no
+repetitions or other values. Omission means controls only, preserving 0.10
+behavior. Earlier versions reject input selection. Disabled navigation
+attaches neither adapter. Flip and custom motion remain unsupported.
+
+With keyboard enabled the reader host enters the normal Tab order and shows
+a visible focus outline. Arrow Down invokes Advance and Arrow Up invokes
+Reverse only while focus is within the reader or its navigation controls.
+No focus moves automatically. Buttons expose their shortcuts through
+`aria-keyshortcuts` and titles; native Enter/Space activation still works.
+Editing targets, native media/form widgets, custom ARIA widgets, composition,
+modified shortcuts and already-handled events retain their own key behavior.
+Only an available action (or an active move) consumes an eligible arrow key.
+At idle boundaries keys retain native behavior. Held-key repeat is consumed
+without queuing extra Beats. Escape and other manual input cancel assistance;
+wheel, touch, Page Up/Down, Home/End and ordinary unfocused arrow scrolling
+remain available. Reduced motion uses the existing immediate driver.
+
+The keyboard adapter shares the input-independent navigation controller with
+visible controls and is removed on route changes along with its temporary
+host tabindex. Both reference Beat fixtures enable keyboard input.
+
+# 73. Touch Flip Input Slice 0.12
+
+Version 0.12 adds `flip` to `body.interaction.advance.inputs`. Visible
+`controls` remain required; keyboard remains optional. Earlier contracts
+reject `flip`. Omitted inputs still mean controls only. The ridge fixture
+now declares `["controls", "keyboard", "flip"]`; the adapter is reusable by
+any story with Beats, including Card and Mask timelines.
+
+Flip is a short, fast, single-finger vertical gesture on the story itself.
+Direction follows native scrolling: finger upward advances down the story;
+finger downward reverses up the story. The down/forward terminology in
+section 46 refers to document travel, not physical finger displacement.
+There is no separate gesture pad, and no per-Frame gesture declaration.
+
+The adapter claims only a cancelable first touch move that is predominantly
+vertical (at least twice the horizontal displacement), 12–140 CSS pixels,
+within 140 ms of contact, and at least 0.35 CSS pixels/ms. An available Beat
+must exist in that direction. If native scrolling already started, the
+adapter leaves the entire gesture native. Wheel/trackpad scrolling, mouse
+input, slow drags, editable and interactive elements, nested scroll areas,
+text selections, zoomed viewports and multi-touch are not Flip inputs.
+
+A claimed gesture invokes one Advance or Reverse on release only if it
+finishes within 240 ms, travels 24–140 CSS pixels, maintains vertical intent
+and sufficient speed, and does not reverse more than 12 pixels. Small taps
+never invoke navigation. Holding, extending, or reversing a claimed gesture
+converts it into continuous document dragging; accumulated displacement is
+applied to real scroll position, and subsequent movement follows the finger.
+This fallback has no synthetic momentum. Unclaimed gestures retain browser
+scrolling and momentum. This early arbitration avoids trying to steal an
+already-native gesture or fighting native momentum after release.
+
+Assisted scrolling uses the same input-independent controller and existing
+GSAP scroll driver. It resolves from current position, tracks the Beat ID,
+respects reduced motion, and never forces timeline progress or moves focus.
+No actions are queued while a finger remains down. New touch, wheel, keys,
+resize, focus loss, visibility changes and teardown cancel pending gesture
+recognition; touch cancellation or multi-touch never invokes a Beat action.
+The recognizer removes all listeners and pending timers on teardown. Boundary
+gestures remain native so readers are not trapped at the first or last Beat.
+Synthetic clicks following a captured drag are suppressed only within the
+story; the visible controls retain native click and keyboard behavior.
+
+Touch thresholds are implementation policy in this slice, not author-tunable
+JSON. A future wheel/trackpad Flip recognizer would require a separate
+arbitration design; those inputs remain continuous here.
+
+# 74. Settled Scroll Snapping Slice 0.13
+
+Version 0.13 adds optional `body.interaction.scroll.snap`:
+
+```json
+"interaction": {
+  "advance": {
+    "enabled": true,
+    "mode": "beats",
+    "inputs": ["controls", "keyboard"]
+  },
+  "scroll": { "snap": "beats" }
+}
+```
+
+`scroll` requires `snap`, whose values are `none` and `beats`. Omission or
+`none` preserves free scrolling. Earlier versions reject `scroll`.
+`beats` requires enabled Beat navigation (and therefore visible controls
+and at least one Beat). Combining it with Flip is invalid: the two policies
+must not compete for gesture ownership. Flip remains available separately.
+The ridge fixture now uses settled scrolling instead of Flip.
+
+All dragging and momentum stay native. The adapter never prevents a touch
+move, captures a flick, or writes scroll position while a finger is held.
+When document scrolling settles after manual input and all fingers, pointer
+buttons and scroll keys are released, the reader snaps to the nearest
+resolved, reachable Beat. Distance is measured from the settled document
+scroll position; ties retain resolved index order. A destination within two
+CSS pixels needs no movement. Snapping can move either forward or backward;
+it does not always Advance. Natural momentum may pass multiple Beats first.
+
+The adapter observes the document's native `scrollend` event, followed by a
+180 ms quiet period to group discrete wheel ticks. Browsers without that
+event use a 180 ms scroll-quiet fallback. Every new scroll update cancels the
+pending timer. A paused finger still prevents snapping indefinitely; release
+allows momentum to finish before selection. This is an idle behavior, not a
+CSS scroll-snap constraint on intermediate positions.
+
+Only manual input originating in the story (or a scrollbar drag) arms a
+snap, and actual document displacement is required. Loading, initial layout,
+programmatic positioning and button/keyboard assisted movement do not arm
+it. Nested scrolling, editing, zooming, multi-touch and text selection retain
+their browser behavior. Touch or pointer contact immediately cancels active
+assistance. Escape, resize, blur, visibility changes, touch cancellation and
+teardown discard pending snapping. A new stationary touch does not restart a
+cancelled snap; a subsequent manual scroll may arm a new one.
+
+`BeatNavigation.snap()` shares the existing ID-tracking scroll driver with
+Advance/Reverse, choosing the nearest Beat through a pure resolver. Explicit
+actions win over snapping; snap cannot interrupt an active action. The
+adapter disarms before assisted movement so its own scroll events cannot
+produce a snap loop. Reduced motion uses the existing immediate driver.
+Focus and semantic reading order remain unchanged. Controls stay available.
+
+# 75. Tap-to-Advance Slice 0.14
+
+Version 0.14 adds `tap` to `body.interaction.advance.inputs`. The ridge now
+uses `["controls", "keyboard", "tap"]` with `scroll.snap: "none"`.
+Earlier versions reject `tap`; visible controls remain required.
+
+A short primary-pointer tap or left mouse click on noninteractive story
+content invokes Advance once. The adapter observes pointer events passively:
+it never prevents scrolling, captures a pointer, or changes native momentum.
+Movement exceeding 10 CSS pixels, contact longer than 350 ms, multi-pointer
+input, pointer cancellation, text selection, modified clicks, interactive
+content, nested scroll areas and zoomed views do not Advance. Any document
+scroll during the contact cancels the pending tap. A contact during assisted
+movement or within 180 ms of scrolling is an interruption only, so braking
+momentum does not accidentally Advance. Compatibility click events are not
+used and cannot invoke a second action.
+
+With snap disabled, manual scrolling stops wherever the browser stops it.
+A later tap chooses the next Beat from that current position. At the final
+Beat Advance remains a no-op. Buttons and scoped keyboard input remain
+available; reduced motion uses the existing immediate driver. No automatic
+focus movement is added. Teardown removes listeners and pending contact.

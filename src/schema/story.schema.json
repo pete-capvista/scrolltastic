@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "StoryDocument",
-  "description": "Scrolltastic renderer contract 0.1 through 0.7. Unsupported capabilities are rejected.",
+  "description": "Scrolltastic renderer contract 0.1 through 0.14. Unsupported capabilities are rejected.",
   "type": "object",
   "properties": {
     "version": {
@@ -13,9 +13,16 @@
         "0.4",
         "0.5",
         "0.6",
-        "0.7"
+        "0.7",
+        "0.8",
+        "0.9",
+        "0.10",
+        "0.11",
+        "0.12",
+        "0.13",
+        "0.14"
       ],
-      "description": "Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT; version 0.7 adds IN + FIT."
+      "description": "Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT; version 0.7 adds IN + FIT; version 0.8 adds BOTH + FIT; version 0.9 adds Element and Timeline Beats; version 0.10 adds Advance/Reverse with controls. Version 0.11 adds scoped keyboard input. Version 0.12 adds touch Flip input. Version 0.13 adds settled-scroll Beat snapping. Version 0.14 adds tap-to-Advance."
     },
     "body": {
       "$ref": "#/definitions/Body"
@@ -27,6 +34,54 @@
   ],
   "additionalProperties": false,
   "definitions": {
+    "ElementBeat": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "align": {
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^(0|-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)(?:px|rem|vw|vh|svh|dvh))$"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "TimelineBeat": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "progress": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "id",
+        "progress"
+      ],
+      "additionalProperties": false
+    },
+    "TimelineBeats": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/TimelineBeat"
+      }
+    },
     "Id": {
       "type": "string",
       "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
@@ -167,6 +222,9 @@
     "BackgroundFrame": {
       "type": "object",
       "properties": {
+        "beat": {
+          "$ref": "#/definitions/ElementBeat"
+        },
         "id": {
           "$ref": "#/definitions/Id"
         },
@@ -201,6 +259,9 @@
     "ImageFrame": {
       "type": "object",
       "properties": {
+        "beat": {
+          "$ref": "#/definitions/ElementBeat"
+        },
         "id": {
           "$ref": "#/definitions/Id"
         },
@@ -249,6 +310,9 @@
     "NarrativeFrame": {
       "type": "object",
       "properties": {
+        "beat": {
+          "$ref": "#/definitions/ElementBeat"
+        },
         "id": {
           "$ref": "#/definitions/Id"
         },
@@ -289,6 +353,9 @@
     "DialogueFrame": {
       "type": "object",
       "properties": {
+        "beat": {
+          "$ref": "#/definitions/ElementBeat"
+        },
         "id": {
           "$ref": "#/definitions/Id"
         },
@@ -355,6 +422,9 @@
     "Panel": {
       "type": "object",
       "properties": {
+        "beat": {
+          "$ref": "#/definitions/ElementBeat"
+        },
         "type": {
           "type": "string",
           "const": "panel"
@@ -453,6 +523,63 @@
     "Body": {
       "type": "object",
       "properties": {
+        "interaction": {
+          "type": "object",
+          "properties": {
+            "advance": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mode": {
+                  "const": "beats"
+                },
+                "inputs": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "controls",
+                      "keyboard",
+                      "flip",
+                      "tap"
+                    ]
+                  },
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "contains": {
+                    "const": "controls"
+                  },
+                  "description": "Defaults to controls only. Visible controls are required; keyboard, Flip and tap are optional."
+                }
+              },
+              "required": [
+                "enabled",
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            "scroll": {
+              "type": "object",
+              "properties": {
+                "snap": {
+                  "enum": [
+                    "none",
+                    "beats"
+                  ]
+                }
+              },
+              "required": [
+                "snap"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "advance"
+          ],
+          "additionalProperties": false
+        },
         "id": {
           "type": "string",
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
@@ -624,6 +751,9 @@
     "MaskFocusTransition": {
       "type": "object",
       "properties": {
+        "beats": {
+          "$ref": "#/definitions/TimelineBeats"
+        },
         "type": {
           "type": "string",
           "const": "pull-focus"
@@ -647,6 +777,9 @@
     "MaskFrame": {
       "type": "object",
       "properties": {
+        "beat": {
+          "$ref": "#/definitions/ElementBeat"
+        },
         "id": {
           "$ref": "#/definitions/Id"
         },
@@ -722,72 +855,239 @@
     "CardFrame": {
       "type": "object",
       "properties": {
-        "id": { "$ref": "#/definitions/Id" },
-        "flow": { "type": "string", "enum": ["normal", "overlay", "overflow"] },
-        "position": { "$ref": "#/definitions/Position" },
-        "type": { "type": "string", "const": "card" },
-        "cardType": { "type": "string", "const": "standard" },
-        "asset": { "$ref": "#/definitions/Asset" },
-        "alt": { "type": "string", "minLength": 1 },
-        "aspectRatio": { "type": "number", "exclusiveMinimum": 0 },
+        "beat": {
+          "$ref": "#/definitions/ElementBeat"
+        },
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "flow": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "overlay",
+            "overflow"
+          ]
+        },
+        "position": {
+          "$ref": "#/definitions/Position"
+        },
+        "type": {
+          "type": "string",
+          "const": "card"
+        },
+        "cardType": {
+          "type": "string",
+          "const": "standard"
+        },
+        "asset": {
+          "$ref": "#/definitions/Asset"
+        },
+        "alt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aspectRatio": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
         "cardGeometry": {
           "type": "object",
           "properties": {
             "artWindow": {
               "type": "object",
               "properties": {
-                "x": { "type": "number", "minimum": 0, "maximum": 1 },
-                "y": { "type": "number", "minimum": 0, "maximum": 1 },
-                "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
-                "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+                "x": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "width": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1
+                },
+                "height": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1
+                }
               },
-              "required": ["x", "y", "width", "height"],
+              "required": [
+                "x",
+                "y",
+                "width",
+                "height"
+              ],
               "additionalProperties": false
             }
           },
-          "required": ["artWindow"],
+          "required": [
+            "artWindow"
+          ],
           "additionalProperties": false
         },
         "artwork": {
           "type": "object",
           "properties": {
             "transition": {
-              "type": "object",
-              "properties": {
-                "direction": { "type": "string", "enum": ["out", "in"] },
-                "presentation": { "type": "string", "enum": ["crop", "fit"] },
-                "scrollMode": { "type": "string", "enum": ["pin", "flow"] },
-                "outRange": {
-                  "type": "array",
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "items": { "type": "number", "minimum": 0, "maximum": 1 }
-                },
-                "inRange": {
-                  "type": "array",
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "items": { "type": "number", "minimum": 0, "maximum": 1 }
-                },
-                "focus": {
+              "oneOf": [
+                {
                   "type": "object",
                   "properties": {
-                    "x": { "type": "number", "minimum": 0, "maximum": 1 },
-                    "y": { "type": "number", "minimum": 0, "maximum": 1 }
+                    "beats": {
+                      "$ref": "#/definitions/TimelineBeats"
+                    },
+                    "direction": {
+                      "type": "string",
+                      "enum": [
+                        "out",
+                        "in"
+                      ]
+                    },
+                    "presentation": {
+                      "type": "string",
+                      "enum": [
+                        "crop",
+                        "fit"
+                      ]
+                    },
+                    "scrollMode": {
+                      "type": "string",
+                      "enum": [
+                        "pin",
+                        "flow"
+                      ]
+                    },
+                    "outRange": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "inRange": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "focus": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        "y": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
+                    }
                   },
-                  "required": ["x", "y"],
+                  "required": [
+                    "direction",
+                    "presentation"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "title": "BothFitTransition",
+                  "type": "object",
+                  "properties": {
+                    "beats": {
+                      "$ref": "#/definitions/TimelineBeats"
+                    },
+                    "direction": {
+                      "const": "both"
+                    },
+                    "presentation": {
+                      "const": "fit"
+                    },
+                    "scrollMode": {
+                      "type": "string",
+                      "enum": [
+                        "pin",
+                        "flow"
+                      ]
+                    },
+                    "inRange": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "holdRange": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "outRange": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "direction",
+                    "presentation",
+                    "inRange",
+                    "holdRange",
+                    "outRange"
+                  ],
                   "additionalProperties": false
                 }
-              },
-              "required": ["direction", "presentation"],
-              "additionalProperties": false
+              ]
             }
           },
-          "required": ["transition"],
+          "required": [
+            "transition"
+          ],
           "additionalProperties": false
         }
       },
-      "required": ["type", "cardType", "asset", "alt", "aspectRatio", "cardGeometry"],
+      "required": [
+        "type",
+        "cardType",
+        "asset",
+        "alt",
+        "aspectRatio",
+        "cardGeometry"
+      ],
       "additionalProperties": false
     }
   }

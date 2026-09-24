@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#102e39"/>
+  <path d="M70 1000V320a330 330 0 01660 0v680" fill="#224b53"/>
+  <path d="M150 1000V340a250 250 0 01500 0v660" fill="#102e39"/>
+  <circle cx="400" cy="365" r="175" fill="#395e60" stroke="#a9c5b8" stroke-width="5"/>
+  <g fill="none" stroke="#a9c5b8" stroke-width="3">
+    <ellipse cx="400" cy="365" rx="65" ry="175"/><ellipse cx="400" cy="365" rx="175" ry="65"/>
+    <path d="M225 365h350M400 190v350M275 240l250 250M275 490l250-250"/>
+  </g>
+  <g fill="#efd595"><circle cx="400" cy="365" r="19"/><circle cx="330" cy="260" r="8"/><circle cx="510" cy="425" r="10"/><circle cx="280" cy="415" r="7"/></g>
+  <path d="M0 1000l280-355h240l280 355" fill="#395e60"/>
+  <path d="M280 700l120-55 120 55-120 95z" fill="#adc5b6"/>
+  <path d="M280 700v90l120 90v-85z" fill="#477878"/><path d="M520 700v90l-120 90v-85z" fill="#193f47"/>
+  <path d="M340 712l60-28 60 28-60 39z" fill="#efd595"/>
+  <path d="M400 540v140" stroke="#efd595" stroke-width="4" stroke-dasharray="8 14"/>
+</svg>

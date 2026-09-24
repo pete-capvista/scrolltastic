@@ -1,6 +1,16 @@
 {
-  "version": "0.7",
+  "version": "0.11",
   "body": {
+    "interaction": {
+      "advance": {
+        "enabled": true,
+        "mode": "beats",
+        "inputs": [
+          "controls",
+          "keyboard"
+        ]
+      }
+    },
     "id": "c6c6bfa1-145e-4d68-a2fd-cc94107b46ea",
     "title": "Guardians of the First Light",
     "containers": [
@@ -11,7 +21,13 @@
           {
             "type": "panel",
             "id": "lunora-entry",
-            "height": { "mode": "content" },
+            "beat": {
+              "id": "lunora-arrival",
+              "align": "start"
+            },
+            "height": {
+              "mode": "content"
+            },
             "frames": [
               {
                 "type": "narrative",
@@ -26,23 +42,58 @@
                 "alt": "Lunora trading card: a moonlit foxlike guardian beside a lake. The card shows HP 110, Moonlit Guidance, and Lunar Veil.",
                 "aspectRatio": 0.704878,
                 "cardGeometry": {
-                  "artWindow": { "x": 0.076, "y": 0.094, "width": 0.846, "height": 0.37 }
+                  "artWindow": {
+                    "x": 0.076,
+                    "y": 0.094,
+                    "width": 0.846,
+                    "height": 0.37
+                  }
                 },
                 "artwork": {
                   "transition": {
-                    "direction": "out",
+                    "direction": "both",
                     "presentation": "fit",
-                    "outRange": [0.18, 0.68]
+                    "inRange": [
+                      0.05,
+                      0.3
+                    ],
+                    "holdRange": [
+                      0.3,
+                      0.62
+                    ],
+                    "outRange": [
+                      0.62,
+                      0.95
+                    ],
+                    "beats": [
+                      {
+                        "id": "lunora-opening-art",
+                        "progress": 0
+                      },
+                      {
+                        "id": "lunora-card-hold",
+                        "progress": 0.45
+                      },
+                      {
+                        "id": "lunora-return-art",
+                        "progress": 0.95
+                      }
+                    ]
                   }
                 }
               }
             ]
           },
-          { "type": "space", "height": "12svh" },
+          {
+            "type": "space",
+            "height": "12svh"
+          },
           {
             "type": "panel",
             "id": "dravion-entry",
-            "height": { "mode": "content" },
+            "height": {
+              "mode": "content"
+            },
             "frames": [
               {
                 "type": "narrative",
@@ -52,29 +103,46 @@
               {
                 "type": "card",
                 "id": "dravion-card",
+                "beat": {
+                  "id": "dravion-moment",
+                  "align": "center"
+                },
                 "cardType": "standard",
                 "asset": "assets/Dravion.png",
                 "alt": "Dravion trading card: a blue dragonlike water guardian above waterfalls. The card shows HP 150, Tidal Surge, and Aqua Dominion.",
                 "aspectRatio": 0.705379,
                 "cardGeometry": {
-                  "artWindow": { "x": 0.076, "y": 0.094, "width": 0.849, "height": 0.372 }
+                  "artWindow": {
+                    "x": 0.076,
+                    "y": 0.094,
+                    "width": 0.849,
+                    "height": 0.372
+                  }
                 },
                 "artwork": {
                   "transition": {
                     "direction": "in",
                     "presentation": "fit",
                     "scrollMode": "flow",
-                    "inRange": [0.18, 0.68]
+                    "inRange": [
+                      0.18,
+                      0.68
+                    ]
                   }
                 }
               }
             ]
           },
-          { "type": "space", "height": "12svh" },
+          {
+            "type": "space",
+            "height": "12svh"
+          },
           {
             "type": "panel",
             "id": "volgarr-entry",
-            "height": { "mode": "content" },
+            "height": {
+              "mode": "content"
+            },
             "frames": [
               {
                 "type": "narrative",
@@ -89,7 +157,12 @@
                 "alt": "Volgarr trading card: a dark, armored fire guardian before an erupting volcano. The card shows HP 170, Molten Roar, and Eruption Fang.",
                 "aspectRatio": 0.709046,
                 "cardGeometry": {
-                  "artWindow": { "x": 0.076, "y": 0.095, "width": 0.848, "height": 0.37 }
+                  "artWindow": {
+                    "x": 0.076,
+                    "y": 0.095,
+                    "width": 0.848,
+                    "height": 0.37
+                  }
                 }
               }
             ]

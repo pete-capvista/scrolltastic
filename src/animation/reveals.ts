@@ -104,6 +104,19 @@ function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'car
     return [start, end] as const;
   };
   const [rangeStart, rangeEnd] = target.range;
+  // Pin spacing reserves phase distance, but a short story can still be less
+  // than one viewport tall after FIT contraction. Keep the end reachable without
+  // changing Panel sizing or displacing any following authored compositions.
+  const body = target.kind === 'card-fit' && target.direction === 'both'
+    ? target.panel.closest<HTMLElement>('.story-body') : null;
+  const previousMinHeight = body?.style.minHeight ?? '';
+  const reserveScrollEnd = () => {
+    if (!body) return;
+    const [start, end] = metrics();
+    const bodyTop = body.getBoundingClientRect().top + window.scrollY;
+    body.style.minHeight = `${Math.ceil(start + rangeEnd * (end - start) + window.innerHeight - bodyTop)}px`;
+  };
+  reserveScrollEnd();
   let trigger: ReturnType<typeof ScrollTrigger.create> | undefined;
   let hasPinned = false;
   trigger = ScrollTrigger.create({
@@ -116,10 +129,13 @@ function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'car
       const [start, end] = metrics();
       return start + rangeEnd * (end - start);
     },
+    onRefresh: self => {
+      if (target.pinBinding) target.pinBinding.range = { start: self.start, end: self.end };
+    },
     pin,
-    // IN + FIT grows the Panel while its prefix is pinned. Reserve the authored
-    // range as temporary scroll runway so the reader can reach the resolved card.
-    pinSpacing: target.kind === 'card-fit' && target.direction === 'in',
+    // IN and BOTH grow the Panel while its prefix is pinned. Reserve the
+    // authored interval so every phase is reachable even in a short story.
+    pinSpacing: target.kind === 'card-fit' && target.direction !== 'out',
     anticipatePin: 1,
     invalidateOnRefresh: true,
     onRefreshInit: () => {
@@ -129,6 +145,7 @@ function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'car
         panelTop = target.panel.getBoundingClientRect().top + window.scrollY;
       }
       sceneHeight = target.kind === 'card-fit' ? naturalPanelHeight(target.panel) : target.panel.getBoundingClientRect().height;
+      reserveScrollEnd();
     },
     onToggle: self => {
       if (self.isActive) {
@@ -140,13 +157,15 @@ function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'car
   });
   return () => {
     trigger.kill();
+    if (target.pinBinding) delete target.pinBinding.range;
+    if (body) body.style.minHeight = previousMinHeight;
     delete pin.dataset.storyPrefixPinned;
   };
 }
 
 function resetCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-fit' }>, naturalHeight: number, dimensions: ReturnType<typeof fitDimensions>) {
   const cardRect = target.front.getBoundingClientRect();
-  const entering = target.direction === 'in';
+  const entering = target.direction !== 'out';
   target.panel.style.height = `${entering ? dimensions.panelHeight : naturalHeight}px`;
   gsap.set(target.front, { opacity: entering ? 0 : 1 });
   gsap.set(target.mask, {
@@ -202,8 +221,7 @@ function attachCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-fit'
       else delete target.pinElement.dataset.storyPrefixArtActive;
     }
   };
-  if (target.direction === 'in') setArtStacked(true);
-  const duration = end - start;
+  if (target.direction !== 'out') setArtStacked(true);
   const timeline = gsap.timeline({
     scrollTrigger: {
       trigger: target.panel,
@@ -211,6 +229,9 @@ function attachCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-fit'
       end: () => panelTop + naturalHeight,
       scrub: true,
       invalidateOnRefresh: true,
+      onRefresh: self => {
+        if (target.beatTimeline) target.beatTimeline.range = { start: self.start, end: self.end };
+      },
       onRefreshInit: () => {
         naturalHeight = naturalPanelHeight(target.panel);
         if (!transitionStarted && !target.pinElement?.dataset.storyPrefixPinned) {
@@ -221,33 +242,57 @@ function attachCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-fit'
       },
       onUpdate: self => {
         setActive(self.progress > start && self.progress < end);
-        setArtStacked(target.direction === 'in' ? self.progress < 1 : self.progress >= start && self.progress < 1);
+        setArtStacked(target.direction !== 'out' ? self.progress < 1 : self.progress >= start && self.progress < 1);
       },
       onLeave: () => { setActive(false); setArtStacked(false); },
       onLeaveBack: () => { setActive(false); setArtStacked(false); },
     },
   });
   timeline.to({}, { duration: 1 }, 0);
-  timeline.to(target.panel, {
-    height: () => target.direction === 'in' ? naturalHeight : dimensions.panelHeight,
-    duration, ease: 'none',
-  }, start);
-  timeline.to(target.mask, {
-    clipPath: target.direction === 'in' ? () => dimensions.clipFrom : 'inset(0px)',
-    autoAlpha: 1,
-    duration, ease: 'none',
-  }, start);
-  timeline.to(target.source, {
-    x: () => target.direction === 'in' ? 0 : dimensions.sourceX,
-    y: () => target.direction === 'in' ? 0 : dimensions.sourceY,
-    scaleX: () => target.direction === 'in' ? 1 : dimensions.sourceScaleX,
-    scaleY: () => target.direction === 'in' ? 1 : dimensions.sourceScaleY,
-    duration, ease: 'none',
-  }, start);
-  timeline.to(target.front, {
-    opacity: target.direction === 'in' ? 1 : 0,
-    duration: duration * (0.35 / 0.5), ease: 'none',
-  }, start + duration * (0.02 / 0.5));
+  const addPhase = (direction: 'in' | 'out', range: [number, number]) => {
+    const [phaseStart, phaseEnd] = range;
+    const duration = phaseEnd - phaseStart;
+    const entering = direction === 'in';
+    // Explicit phase endpoints keep the second leg independent of GSAP's
+    // cached start values when the reader reverses or geometry is refreshed.
+    const artHeight = () => dimensions.panelHeight;
+    const cardHeight = () => naturalHeight;
+    timeline.fromTo(target.panel, {
+      height: entering ? artHeight : cardHeight,
+    }, {
+      height: entering ? cardHeight : artHeight,
+      duration, ease: 'none', immediateRender: false,
+    }, phaseStart);
+    timeline.fromTo(target.mask, {
+      clipPath: entering ? 'inset(0px)' : () => dimensions.clipFrom,
+      autoAlpha: entering || target.direction === 'both' ? 1 : 0,
+    }, {
+      clipPath: entering ? () => dimensions.clipFrom : 'inset(0px)',
+      autoAlpha: 1,
+      duration, ease: 'none', immediateRender: false,
+    }, phaseStart);
+    timeline.fromTo(target.source, {
+      x: () => entering ? dimensions.sourceX : 0,
+      y: () => entering ? dimensions.sourceY : 0,
+      scaleX: () => entering ? dimensions.sourceScaleX : 1,
+      scaleY: () => entering ? dimensions.sourceScaleY : 1,
+    }, {
+      x: () => entering ? 0 : dimensions.sourceX,
+      y: () => entering ? 0 : dimensions.sourceY,
+      scaleX: () => entering ? 1 : dimensions.sourceScaleX,
+      scaleY: () => entering ? 1 : dimensions.sourceScaleY,
+      duration, ease: 'none', immediateRender: false,
+    }, phaseStart);
+    timeline.fromTo(target.front, { opacity: entering ? 0 : 1 }, {
+      opacity: entering ? 1 : 0,
+      duration: duration * (0.35 / 0.5), ease: 'none', immediateRender: false,
+    }, phaseStart + duration * (0.02 / 0.5));
+  };
+  if (target.direction === 'both') {
+    addPhase('in', target.inRange);
+    // No tweens during holdRange or gaps: retain the resolved physical Card.
+    addPhase('out', target.outRange);
+  } else addPhase(target.direction, target.range);
   return () => {
     setActive(false);
     setArtStacked(false);
@@ -261,105 +306,150 @@ function attachCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-fit'
 export function attachStoryAnimations(root: HTMLElement, targets: readonly ScrollAnimationTarget[]): AnimationHandle {
   if (!targets.length) return { destroy() {} };
   gsap.registerPlugin(ScrollTrigger);
-  const media = gsap.matchMedia(root);
-  media.add('(prefers-reduced-motion: no-preference)', () => {
-    const cleanups: Array<() => void> = [];
-    for (const target of targets) {
-      if (target.kind === 'card-fit') {
-        cleanups.push(attachCardFit(target));
-        continue;
-      }
-      if (target.kind === 'card-out-crop') {
-        cleanups.push(attachTransitionPin(target));
-        const [start, end] = target.range;
-        const duration = end - start;
-        resetCardCrop(target);
-        let cover = cardCropCover(target);
-        const timeline = gsap.timeline({
-          scrollTrigger: {
-            trigger: target.panel,
-            start: 'clamp(top bottom)',
-            end: 'clamp(bottom top)',
-            scrub: true,
-            invalidateOnRefresh: true,
-            onRefreshInit: () => {
-              resetCardCrop(target);
-              cover = cardCropCover(target);
+  let notifyFrame = 0;
+  const notifyBeats = () => {
+    cancelAnimationFrame(notifyFrame);
+    notifyFrame = requestAnimationFrame(() => {
+      notifyFrame = 0;
+      root.dispatchEvent(new CustomEvent('story:animation-refresh'));
+    });
+  };
+  ScrollTrigger.addEventListener('refresh', notifyBeats);
+  const createMedia = () => {
+    const media = gsap.matchMedia(root);
+    media.add('(prefers-reduced-motion: no-preference)', () => {
+      const cleanups: Array<() => void> = [];
+      for (const target of targets) {
+        if (target.kind === 'card-fit') {
+          cleanups.push(attachCardFit(target));
+          continue;
+        }
+        if (target.kind === 'card-out-crop') {
+          cleanups.push(attachTransitionPin(target));
+          const [start, end] = target.range;
+          const duration = end - start;
+          resetCardCrop(target);
+          let cover = cardCropCover(target);
+          const timeline = gsap.timeline({
+            scrollTrigger: {
+              trigger: target.panel,
+              start: 'clamp(top bottom)',
+              end: 'clamp(bottom top)',
+              scrub: true,
+              invalidateOnRefresh: true,
+              onRefresh: self => {
+                if (target.beatTimeline) target.beatTimeline.range = { start: self.start, end: self.end };
+              },
+              onRefreshInit: () => {
+                resetCardCrop(target);
+                cover = cardCropCover(target);
+              },
             },
-          },
-        });
-        timeline.to({}, { duration: 1 }, 0);
-        timeline.to(target.mask, {
-          left: 0,
-          top: 0,
-          width: () => target.panel.clientWidth,
-          height: () => target.panel.clientHeight,
-          borderRadius: 0,
-          autoAlpha: 1,
-          duration,
+          });
+          timeline.to({}, { duration: 1 }, 0);
+          timeline.to(target.mask, {
+            left: 0,
+            top: 0,
+            width: () => target.panel.clientWidth,
+            height: () => target.panel.clientHeight,
+            borderRadius: 0,
+            autoAlpha: 1,
+            duration,
+            ease: 'none',
+          }, start);
+          timeline.to(target.source, {
+            left: () => cover.left,
+            top: () => cover.top,
+            width: () => cover.width,
+            height: () => cover.height,
+            duration,
+            ease: 'none',
+          }, start);
+          timeline.to(target.front, {
+            opacity: 0,
+            duration: duration * (0.35 / 0.55),
+            ease: 'none',
+          }, start + duration * (0.02 / 0.55));
+          continue;
+        }
+        if (target.kind === 'pull-focus') {
+          const [start, end] = target.range;
+          const duration = end - start;
+          const timeline = gsap.timeline({
+            scrollTrigger: {
+              trigger: target.panel,
+              start: 'clamp(top bottom)',
+              end: 'clamp(bottom top)',
+              scrub: true,
+              invalidateOnRefresh: true,
+              onRefresh: self => {
+                if (target.beatTimeline) target.beatTimeline.range = { start: self.start, end: self.end };
+              },
+            },
+          });
+          // Keep the timeline duration at one so the authored range remains a
+          // normalized position across the entire Panel entry-to-exit interval.
+          timeline.to({}, { duration: 1 }, 0);
+          timeline.to(target.placement, {
+            left: 0, top: 0, width: '100%', height: '100%', xPercent: 0, yPercent: 0,
+            duration, ease: 'none',
+          }, start);
+          timeline.to(target.content, {
+            clipPath: maskClipPath(target.shape, true), duration, ease: 'none',
+          }, start);
+          continue;
+        }
+        const { panel, content, config } = target;
+        const from = config.from ?? {};
+        gsap.fromTo(content, {
+          opacity: from.opacity ?? 0,
+          yPercent: from.yPercent ?? 8,
+          scale: from.scale ?? 0.97,
+        }, {
+          opacity: 1,
+          yPercent: 0,
+          scale: 1,
           ease: 'none',
-        }, start);
-        timeline.to(target.source, {
-          left: () => cover.left,
-          top: () => cover.top,
-          width: () => cover.width,
-          height: () => cover.height,
-          duration,
-          ease: 'none',
-        }, start);
-        timeline.to(target.front, {
-          opacity: 0,
-          duration: duration * (0.35 / 0.55),
-          ease: 'none',
-        }, start + duration * (0.02 / 0.55));
-        continue;
-      }
-      if (target.kind === 'pull-focus') {
-        const [start, end] = target.range;
-        const duration = end - start;
-        const timeline = gsap.timeline({
           scrollTrigger: {
-            trigger: target.panel,
-            start: 'clamp(top bottom)',
-            end: 'clamp(bottom top)',
+            trigger: panel,
+            start: config.start ?? 'top 82%',
+            end: config.end ?? 'top 55%',
             scrub: true,
             invalidateOnRefresh: true,
           },
         });
-        // Keep the timeline duration at one so the authored range remains a
-        // normalized position across the entire Panel entry-to-exit interval.
-        timeline.to({}, { duration: 1 }, 0);
-        timeline.to(target.placement, {
-          left: 0, top: 0, width: '100%', height: '100%', xPercent: 0, yPercent: 0,
-          duration, ease: 'none',
-        }, start);
-        timeline.to(target.content, {
-          clipPath: maskClipPath(target.shape, true), duration, ease: 'none',
-        }, start);
-        continue;
       }
-      const { panel, content, config } = target;
-      const from = config.from ?? {};
-      gsap.fromTo(content, {
-        opacity: from.opacity ?? 0,
-        yPercent: from.yPercent ?? 8,
-        scale: from.scale ?? 0.97,
-      }, {
-        opacity: 1,
-        yPercent: 0,
-        scale: 1,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: panel,
-          start: config.start ?? 'top 82%',
-          end: config.end ?? 'top 55%',
-          scrub: true,
-          invalidateOnRefresh: true,
-        },
-      });
-    }
-    return () => cleanups.forEach(cleanup => cleanup());
-  });
+      notifyBeats();
+      return () => {
+        cleanups.forEach(cleanup => cleanup());
+        for (const target of targets) {
+          if (target.beatTimeline) delete target.beatTimeline.range;
+          if (target.pinBinding) delete target.pinBinding.range;
+        }
+        notifyBeats();
+      };
+    });
+
+    return media;
+  };
+  let media = createMedia();
+  let resizeTimer = 0;
+  let viewportWidth = window.innerWidth;
+  let viewportHeight = window.innerHeight;
+  const resize = () => {
+    if (viewportWidth === window.innerWidth && viewportHeight === window.innerHeight) return;
+    viewportWidth = window.innerWidth;
+    viewportHeight = window.innerHeight;
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      // A fixed pin retains its old width during refreshInit. Tear down our
+      // context first so all geometry is measured in responsive document flow.
+      media.revert();
+      media = createMedia();
+      refresh();
+    }, 150);
+  };
+  window.addEventListener('resize', resize);
 
   let refreshFrame = 0;
   const refresh = () => {
@@ -374,8 +464,13 @@ export function attachStoryAnimations(root: HTMLElement, targets: readonly Scrol
   return {
     destroy() {
       root.removeEventListener('story:layout', refresh);
+      window.removeEventListener('resize', resize);
+      clearTimeout(resizeTimer);
       cancelAnimationFrame(refreshFrame);
       media.revert();
+      ScrollTrigger.removeEventListener('refresh', notifyBeats);
+      cancelAnimationFrame(notifyFrame);
+      root.dispatchEvent(new CustomEvent('story:animation-refresh'));
     },
   };
 }

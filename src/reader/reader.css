@@ -44,3 +44,33 @@ body { margin: 0; }
   line-height: 1.65;
   text-wrap: balance;
 }
+
+.reader-controls {
+  position: fixed;
+  z-index: 100;
+  inset: auto 0 0;
+  box-sizing: border-box;
+  width: min(100%, 720px);
+  margin-inline: auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .65rem 1rem calc(.65rem + env(safe-area-inset-bottom));
+  border-top: 1px solid #bac9c6;
+  background: #f7f4eb;
+}
+.reader-controls button {
+  min-height: 44px;
+  min-width: 100px;
+  padding: .65rem 1.2rem;
+  border: 1px solid #224b53;
+  border-radius: .35rem;
+  background: #16373f;
+  color: #fffdf5;
+  font: 600 .95rem/1.2 system-ui, sans-serif;
+  cursor: pointer;
+}
+.reader-controls button:focus-visible { outline: 3px solid #9a680a; outline-offset: 3px; }
+.reader-controls button[aria-disabled='true'] { color: #556764; background: transparent; border-color: #a7b5b0; cursor: default; }
+
+#app[tabindex="0"]:focus-visible { outline: 3px solid #9a680a; outline-offset: -3px; }

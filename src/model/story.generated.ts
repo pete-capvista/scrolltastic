@@ -54,15 +54,23 @@ export type Asset = string;
  * via the `definition` "MaskShape".
  */
 export type MaskShape = EllipseMaskShape | RoundedRectMaskShape | PolygonMaskShape;
+/**
+ * @minItems 1
+ *
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "TimelineBeats".
+ */
+export type TimelineBeats = [TimelineBeat, ...TimelineBeat[]];
 
 /**
- * Scrolltastic renderer contract 0.1 through 0.7. Unsupported capabilities are rejected.
+ * Scrolltastic renderer contract 0.1 through 0.14. Unsupported capabilities are rejected.
  */
 export interface StoryDocument {
   /**
-   * Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT; version 0.7 adds IN + FIT.
+   * Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT; version 0.7 adds IN + FIT; version 0.8 adds BOTH + FIT; version 0.9 adds Element and Timeline Beats; version 0.10 adds Advance/Reverse with controls. Version 0.11 adds scoped keyboard input. Version 0.12 adds touch Flip input. Version 0.13 adds settled-scroll Beat snapping. Version 0.14 adds tap-to-Advance.
    */
-  version: "0.1" | "0.2" | "0.3" | "0.4" | "0.5" | "0.6" | "0.7";
+  version:
+    "0.1" | "0.2" | "0.3" | "0.4" | "0.5" | "0.6" | "0.7" | "0.8" | "0.9" | "0.10" | "0.11" | "0.12" | "0.13" | "0.14";
   body: Body;
 }
 /**
@@ -70,6 +78,21 @@ export interface StoryDocument {
  * via the `definition` "Body".
  */
 export interface Body {
+  interaction?: {
+    advance: {
+      enabled: boolean;
+      mode: "beats";
+      /**
+       * Defaults to controls only. Visible controls are required; keyboard, Flip and tap are optional.
+       *
+       * @minItems 1
+       */
+      inputs?: ["controls" | "keyboard" | "flip" | "tap", ...("controls" | "keyboard" | "flip" | "tap")[]];
+    };
+    scroll?: {
+      snap: "none" | "beats";
+    };
+  };
   id: string;
   title: string;
   orientation?: "portrait";
@@ -101,6 +124,7 @@ export interface Container {
  * via the `definition` "Panel".
  */
 export interface Panel {
+  beat?: ElementBeat;
   type: "panel";
   id: Id;
   height?: Height;
@@ -111,9 +135,19 @@ export interface Panel {
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "ElementBeat".
+ */
+export interface ElementBeat {
+  id: Id;
+  align?: "start" | "center" | "end";
+  offset?: string;
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
  * via the `definition` "BackgroundFrame".
  */
 export interface BackgroundFrame {
+  beat?: ElementBeat;
   id?: Id;
   flow?: "overlay";
   position?: Position;
@@ -138,6 +172,7 @@ export interface Position {
  * via the `definition` "ImageFrame".
  */
 export interface ImageFrame {
+  beat?: ElementBeat;
   id?: Id;
   flow?: "normal" | "overlay" | "overflow";
   position?: Position;
@@ -152,6 +187,7 @@ export interface ImageFrame {
  * via the `definition` "NarrativeFrame".
  */
 export interface NarrativeFrame {
+  beat?: ElementBeat;
   id?: Id;
   flow?: "normal" | "overlay" | "overflow";
   position?: Position;
@@ -179,6 +215,7 @@ export interface RevealAnimation {
  * via the `definition` "DialogueFrame".
  */
 export interface DialogueFrame {
+  beat?: ElementBeat;
   id?: Id;
   flow?: "normal" | "overlay" | "overflow";
   position?: Position;
@@ -192,6 +229,7 @@ export interface DialogueFrame {
  * via the `definition` "MaskFrame".
  */
 export interface MaskFrame {
+  beat?: ElementBeat;
   id?: Id;
   flow?: "overlay";
   position: Position;
@@ -238,6 +276,7 @@ export interface PolygonMaskShape {
  * via the `definition` "MaskFocusTransition".
  */
 export interface MaskFocusTransition {
+  beats?: TimelineBeats;
   type: "pull-focus";
   /**
    * @minItems 2
@@ -247,9 +286,18 @@ export interface MaskFocusTransition {
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "TimelineBeat".
+ */
+export interface TimelineBeat {
+  id: Id;
+  progress: number;
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
  * via the `definition` "CardFrame".
  */
 export interface CardFrame {
+  beat?: ElementBeat;
   id?: Id;
   flow?: "normal" | "overlay" | "overflow";
   position?: Position;
@@ -267,26 +315,50 @@ export interface CardFrame {
     };
   };
   artwork?: {
-    transition: {
-      direction: "out" | "in";
-      presentation: "crop" | "fit";
-      scrollMode?: "pin" | "flow";
-      /**
-       * @minItems 2
-       * @maxItems 2
-       */
-      outRange?: [number, number];
-      /**
-       * @minItems 2
-       * @maxItems 2
-       */
-      inRange?: [number, number];
-      focus?: {
-        x: number;
-        y: number;
-      };
-    };
+    transition:
+      | {
+          beats?: TimelineBeats;
+          direction: "out" | "in";
+          presentation: "crop" | "fit";
+          scrollMode?: "pin" | "flow";
+          /**
+           * @minItems 2
+           * @maxItems 2
+           */
+          outRange?: [number, number];
+          /**
+           * @minItems 2
+           * @maxItems 2
+           */
+          inRange?: [number, number];
+          focus?: {
+            x: number;
+            y: number;
+          };
+        }
+      | BothFitTransition;
   };
+}
+export interface BothFitTransition {
+  beats?: TimelineBeats;
+  direction: "both";
+  presentation: "fit";
+  scrollMode?: "pin" | "flow";
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  inRange: [number, number];
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  holdRange: [number, number];
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  outRange: [number, number];
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema

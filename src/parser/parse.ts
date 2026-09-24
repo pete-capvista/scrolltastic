@@ -44,8 +44,29 @@ export function parseStory(input: unknown): NormalizedStory {
   const document = structuredClone(value);
   const issues: Diagnostic[] = [];
   const ids = new Set<string>();
+  let beatCount = 0;
+  if (document.body.interaction && !['0.10', '0.11', '0.12', '0.13', '0.14'].includes(document.version)) {
+    issues.push({ path: '/body/interaction', message: 'Interaction declarations require document version 0.10.' });
+  }
+  if (document.body.interaction?.advance.inputs && !['0.11', '0.12', '0.13', '0.14'].includes(document.version)) {
+    issues.push({ path: '/body/interaction/advance/inputs', message: 'Input selection requires document version 0.11.' });
+  }
+  if (document.body.interaction?.advance.inputs?.includes('flip') && !['0.12', '0.13', '0.14'].includes(document.version)) {
+    issues.push({ path: '/body/interaction/advance/inputs', message: 'Flip input requires document version 0.12.' });
+  }
+  if (document.body.interaction?.advance.inputs?.includes('tap') && document.version !== '0.14') {
+    issues.push({ path: '/body/interaction/advance/inputs', message: 'Tap input requires document version 0.14.' });
+  }
+  const interaction = document.body.interaction;
+  if (interaction?.scroll && !['0.13', '0.14'].includes(document.version)) {
+    issues.push({ path: '/body/interaction/scroll', message: 'Scroll snapping requires document version 0.13.' });
+  }
+  if (interaction?.scroll?.snap === 'beats') {
+    if (!interaction.advance.enabled) issues.push({ path: '/body/interaction/scroll/snap', message: 'Beat snapping requires enabled Beat navigation and visible controls.' });
+    if (interaction.advance.inputs?.includes('flip')) issues.push({ path: '/body/interaction/scroll/snap', message: 'Beat snapping cannot be combined with Flip input.' });
+  }
   let pinnedCardTransitionCount = 0;
-  if (['0.6', '0.7'].includes(document.version)) {
+  if (['0.6', '0.7', '0.8', '0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(document.version)) {
     document.body.containers.forEach((container, ci) => container.flow.forEach((item, pi) => {
       if (item.type !== 'panel') return;
       item.frames.forEach((frame, fi) => {
@@ -66,6 +87,18 @@ export function parseStory(input: unknown): NormalizedStory {
     if (ids.has(id)) issues.push({ path: `${path}/id`, message: `Duplicate ID: ${id}.` });
     ids.add(id);
   };
+  const checkBeats = (beats: readonly { id: string }[] | undefined, path: string) => {
+    if (!beats) return;
+    beatCount += beats.length;
+    if (!['0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(document.version)) issues.push({ path, message: 'Beats require document version 0.9.' });
+    beats.forEach((beat, index) => checkId(beat.id, `${path}/${index}`));
+  };
+  const checkElementBeat = (beat: { id: string } | undefined, path: string) => {
+    if (!beat) return;
+    beatCount++;
+    if (!['0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(document.version)) issues.push({ path, message: 'Beats require document version 0.9.' });
+    checkId(beat.id, path);
+  };
   checkId(document.body.id, '/body');
   const containers = document.body.containers.map((container, ci): NormalizedContainer => {
     const cp = `/body/containers/${ci}`;
@@ -74,9 +107,13 @@ export function parseStory(input: unknown): NormalizedStory {
       if (item.type === 'space') return { ...item, background: item.background ?? '#ffffff' };
       const pp = `${cp}/flow/${pi}`;
       checkId(item.id, pp);
+      checkElementBeat(item.beat, `${pp}/beat`);
       const frames = item.frames.map((frame, fi): NormalizedFrame => {
         const fp = `${pp}/frames/${fi}`;
         checkId(frame.id, fp);
+        checkElementBeat(frame.beat, `${fp}/beat`);
+        if (frame.type === 'mask') checkBeats(frame.transition?.beats, `${fp}/transition/beats`);
+        if (frame.type === 'card') checkBeats(frame.artwork?.transition.beats, `${fp}/artwork/transition/beats`);
         const flow = frame.flow ?? (frame.type === 'background' || frame.type === 'mask' ? 'overlay' : 'normal');
         const issue = (field: string, message: string) => issues.push({ path: `${fp}/${field}`, message });
         if (frame.type === 'background' && frame.position) issue('position', 'Background fills its Panel; custom positioning is not supported in 0.1.');
@@ -106,14 +143,22 @@ export function parseStory(input: unknown): NormalizedStory {
             const transition = frame.artwork.transition;
             const presentation = transition.presentation;
             const direction = transition.direction;
-            if (presentation === 'crop' && (direction !== 'out' || !['0.5', '0.6', '0.7'].includes(document.version))) issue('artwork/transition', 'Standard-card OUT + CROP requires document version 0.5 or later.');
-            if (presentation === 'fit' && direction === 'out' && !['0.6', '0.7'].includes(document.version)) issue('artwork/transition', 'Standard-card OUT + FIT requires document version 0.6 or later.');
-            if (presentation === 'fit' && direction === 'in' && document.version !== '0.7') issue('artwork/transition', 'Standard-card IN + FIT requires document version 0.7.');
+            if (presentation === 'crop' && (direction !== 'out' || !['0.5', '0.6', '0.7', '0.8', '0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(document.version))) issue('artwork/transition', 'Standard-card OUT + CROP requires document version 0.5 or later.');
+            if (presentation === 'fit' && direction === 'out' && !['0.6', '0.7', '0.8', '0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(document.version)) issue('artwork/transition', 'Standard-card OUT + FIT requires document version 0.6 or later.');
+            if (presentation === 'fit' && direction === 'in' && !['0.7', '0.8', '0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(document.version)) issue('artwork/transition', 'Standard-card IN + FIT requires document version 0.7 or later.');
             if (direction === 'in' && presentation !== 'fit') issue('artwork/transition', 'Only IN + FIT is supported; IN + CROP is not implemented.');
-            if (!['0.6', '0.7'].includes(document.version) && transition.scrollMode) issue('artwork/transition/scrollMode', 'scrollMode requires document version 0.6 or later.');
-            if (presentation === 'fit' && transition.focus) issue('artwork/transition/focus', 'FIT transitions do not accept a focus point.');
+            if (!['0.6', '0.7', '0.8', '0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(document.version) && transition.scrollMode) issue('artwork/transition/scrollMode', 'scrollMode requires document version 0.6 or later.');
+            if (presentation === 'fit' && 'focus' in transition && transition.focus) issue('artwork/transition/focus', 'FIT transitions do not accept a focus point.');
             if (direction === 'out' && transition.inRange) issue('artwork/transition/inRange', 'inRange is only valid for an IN transition.');
             if (direction === 'in' && transition.outRange) issue('artwork/transition/outRange', 'outRange is only valid for an OUT transition.');
+            if (direction === 'both') {
+              if (!['0.8', '0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(document.version)) issue('artwork/transition', 'Standard-card BOTH + FIT requires document version 0.8 or later.');
+              const ranges = [transition.inRange, transition.holdRange, transition.outRange];
+              for (const [index, name] of ['inRange', 'holdRange', 'outRange'].entries()) {
+                if (ranges[index][0] >= ranges[index][1]) issue(`artwork/transition/${name}`, 'Phase range start must be less than its end.');
+                if (index > 0 && ranges[index][0] < ranges[index - 1][1]) issue(`artwork/transition/${name}`, 'BOTH phase ranges must be ordered and non-overlapping.');
+              }
+            }
             const range = direction === 'in' ? transition.inRange : transition.outRange;
             const [start, end] = range ?? (presentation === 'fit' ? [0.18, 0.68] : [0.18, 0.73]);
             if (start >= end) issue(`artwork/transition/${direction === 'in' ? 'inRange' : 'outRange'}`, `${direction.toUpperCase()} transition range start must be less than its end.`);
@@ -135,6 +180,9 @@ export function parseStory(input: unknown): NormalizedStory {
       return { ...item, height, frames };
     }) };
   });
+  if (document.body.interaction?.advance.enabled && beatCount === 0) {
+    issues.push({ path: '/body/interaction/advance', message: 'Enabled Beat navigation requires at least one authored Beat.' });
+  }
   if (issues.length) throw new StoryValidationError(issues);
   return { ...document, body: { ...document.body, containers } };
 }
