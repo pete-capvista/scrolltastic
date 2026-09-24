@@ -1,5 +1,5 @@
 {
-  "version": "0.6",
+  "version": "0.7",
   "body": {
     "id": "c6c6bfa1-145e-4d68-a2fd-cc94107b46ea",
     "title": "Guardians of the First Light",
@@ -58,6 +58,14 @@
                 "aspectRatio": 0.705379,
                 "cardGeometry": {
                   "artWindow": { "x": 0.076, "y": 0.094, "width": 0.849, "height": 0.372 }
+                },
+                "artwork": {
+                  "transition": {
+                    "direction": "in",
+                    "presentation": "fit",
+                    "scrollMode": "flow",
+                    "inRange": [0.18, 0.68]
+                  }
                 }
               }
             ]

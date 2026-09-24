@@ -1,6 +1,6 @@
 # First renderer slice
 
-Status: static renderer, scroll reveals, Mask Frames, pull-focus, static standard Cards, OUT + CROP and OUT + FIT are implemented through contract 0.6.
+Status: static renderer, scroll reveals, Mask Frames, pull-focus, static standard Cards, OUT + CROP, OUT + FIT and IN + FIT are implemented through contract 0.7.
 
 The canonical language and hosting contract are in
 [the design specification](../scrolltastic_design_spec_v4.md), especially
@@ -149,20 +149,22 @@ are covered by the production build and manual browser inspection.
 Automated test suites were not run for this slice.
 
 The trading-card slices add contract 0.4 static standard Card Frames,
-contract 0.5 reversible OUT + CROP transitions and contract 0.6 OUT + FIT.
+contract 0.5 reversible OUT + CROP transitions, contract 0.6 OUT + FIT and
+contract 0.7 IN + FIT.
 They use complete card-front assets and normalized artwork-window geometry.
 The three-card fixture demonstrates Lunora, Dravion and Volgarr in authored
 order, with Lunora transitioning to full-width artwork while the following
 Panels move up underneath the pinned story prefix as its content-sized Panel
-contracts. New transitions pin by default; `scrollMode: "flow"` opts out.
+contracts. FIT transitions introduced in 0.6 and 0.7 pin by default;
+`scrollMode: "flow"` opts out.
 
-Later slices add IN + FIT and BOTH + FIT Card transitions, Beat resolution
-and semantic Advance/Reverse before Flip recognition.
+Later slices add BOTH + FIT, Beat resolution and semantic Advance/Reverse
+before Flip recognition.
 
 ## Verification results
 
-- 18 unit tests pass for parsing, validation, fixture assets and package URL resolution.
-- 18 browser tests pass across mobile-emulated and desktop Chromium.
+- 19 unit tests pass for parsing, validation, fixture assets and package URL resolution.
+- 20 browser tests pass across mobile-emulated and desktop Chromium.
 - Type checking, generated-type consistency and the production build pass.
 - Visual inspection confirms the portrait fixture, overflow captions and homepage render.
 - Valid story loads produce no browser console errors.

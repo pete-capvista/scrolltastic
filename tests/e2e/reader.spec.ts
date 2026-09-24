@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 const ridge = '550e8400-e29b-41d4-a716-446655440000';
 const coast = 'b670153e-79da-4bb4-9d69-1b8efb433287';
+const cards = 'c6c6bfa1-145e-4d68-a2fd-cc94107b46ea';
 async function openStory(page: Page, id = ridge) {
   await page.goto(`/s/${id}`);
   await expect(page.locator('#app')).toHaveAttribute('data-ready', 'true');
@@ -25,6 +26,52 @@ test('direct links, refresh, and isolated package assets', async ({ page, reques
   const b = await request.get(`/stories/${coast}/assets/scene.svg`);
   expect(await a.text()).not.toBe(await b.text());
   expect(errors).toEqual([]);
+});
+
+test('IN + FIT opens on full artwork, resolves to the card and reverses with scroll', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  // Isolate IN + FIT as the story's one pinned transition; sequential pin
+  // wrappers are rejected until the renderer supports flattening them.
+  await page.route(`**/stories/${cards}/story.json`, async route => {
+    const response = await route.fetch();
+    const story = await response.json();
+    const panels = story.body.containers.flatMap((container: any) => container.flow.filter((item: any) => item.type === 'panel'));
+    delete panels.find((item: any) => item.id === 'lunora-entry').frames.find((item: any) => item.type === 'card').artwork;
+    delete panels.find((item: any) => item.id === 'dravion-entry').frames.find((item: any) => item.type === 'card').artwork.transition.scrollMode;
+    await route.fulfill({ response, json: story });
+  });
+  await page.goto(`/s/${cards}`);
+  await expect(page.locator('#app')).toHaveAttribute('data-ready', 'true');
+  const geometry = await page.evaluate(() => {
+    const panel = document.querySelector<HTMLElement>('[data-panel-id="dravion-entry"]')!;
+    const previous = panel.style.height;
+    const top = panel.getBoundingClientRect().top + scrollY;
+    panel.style.height = 'auto';
+    const naturalHeight = panel.getBoundingClientRect().height;
+    panel.style.height = previous;
+    const start = Math.max(0, top - innerHeight);
+    return { start, end: top + naturalHeight, naturalHeight };
+  });
+  const stateAt = async (progress: number) => page.evaluate(async ({ progress, start, end }) => {
+    scrollTo(0, start + progress * (end - start));
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    const panel = document.querySelector<HTMLElement>('[data-panel-id="dravion-entry"]')!;
+    const card = panel.querySelector<HTMLImageElement>('.frame-content--card img')!;
+    const mask = panel.querySelector<HTMLElement>('.card-art-mask')!;
+    return { height: panel.getBoundingClientRect().height, opacity: Number(getComputedStyle(card).opacity), maskOpacity: Number(getComputedStyle(mask).opacity) };
+  }, { progress, ...geometry });
+  const artwork = await stateAt(.05);
+  const midpoint = await stateAt(.5);
+  const card = await stateAt(.9);
+  const reversedArtwork = await stateAt(.05);
+  expect(artwork.height).toBeLessThan(geometry.naturalHeight * .7);
+  expect(artwork.opacity).toBe(0);
+  expect(artwork.maskOpacity).toBe(1);
+  expect(midpoint.opacity).toBeGreaterThan(0);
+  expect(midpoint.opacity).toBeLessThan(1);
+  expect(card.height).toBeCloseTo(geometry.naturalHeight, 0);
+  expect(card.opacity).toBe(1);
+  expect(reversedArtwork.opacity).toBe(0);
 });
 
 test('intrinsic heights, Space, overflow, clipping and uninterrupted image joins', async ({ page }) => {

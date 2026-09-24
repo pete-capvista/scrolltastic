@@ -52,7 +52,7 @@ function cardCropCover(target: Extract<ScrollAnimationTarget, { kind: 'card-out-
   };
 }
 
-function fitDimensions(target: Extract<ScrollAnimationTarget, { kind: 'card-out-fit' }>) {
+function fitDimensions(target: Extract<ScrollAnimationTarget, { kind: 'card-fit' }>) {
   const panelWidth = target.panel.clientWidth;
   const panelRect = target.panel.getBoundingClientRect();
   const cardRect = target.front.getBoundingClientRect();
@@ -88,16 +88,16 @@ function fitDimensions(target: Extract<ScrollAnimationTarget, { kind: 'card-out-
 function naturalPanelHeight(panel: HTMLElement) {
   const previous = panel.style.height;
   panel.style.height = 'auto';
-  const height = panel.getBoundingClientRect().height;
+  const height = Math.max(panel.getBoundingClientRect().height, panel.scrollHeight);
   panel.style.height = previous;
   return height;
 }
 
-function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'card-out-crop' | 'card-out-fit' }>) {
+function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'card-out-crop' | 'card-fit' }>) {
   const pin = target.pinElement;
   if (target.scrollMode !== 'pin' || !pin) return () => {};
   let panelTop = target.panel.getBoundingClientRect().top + window.scrollY;
-  let sceneHeight = target.kind === 'card-out-fit' ? naturalPanelHeight(target.panel) : target.panel.getBoundingClientRect().height;
+  let sceneHeight = target.kind === 'card-fit' ? naturalPanelHeight(target.panel) : target.panel.getBoundingClientRect().height;
   const metrics = () => {
     const start = Math.max(0, panelTop - window.innerHeight);
     const end = panelTop + sceneHeight;
@@ -117,7 +117,9 @@ function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'car
       return start + rangeEnd * (end - start);
     },
     pin,
-    pinSpacing: false,
+    // IN + FIT grows the Panel while its prefix is pinned. Reserve the authored
+    // range as temporary scroll runway so the reader can reach the resolved card.
+    pinSpacing: target.kind === 'card-fit' && target.direction === 'in',
     anticipatePin: 1,
     invalidateOnRefresh: true,
     onRefreshInit: () => {
@@ -126,7 +128,7 @@ function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'car
       if (!hasPinned && !trigger?.isActive && !pin.dataset.storyPrefixPinned && getComputedStyle(pin).position !== 'fixed') {
         panelTop = target.panel.getBoundingClientRect().top + window.scrollY;
       }
-      sceneHeight = target.kind === 'card-out-fit' ? naturalPanelHeight(target.panel) : target.panel.getBoundingClientRect().height;
+      sceneHeight = target.kind === 'card-fit' ? naturalPanelHeight(target.panel) : target.panel.getBoundingClientRect().height;
     },
     onToggle: self => {
       if (self.isActive) {
@@ -142,17 +144,18 @@ function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'car
   };
 }
 
-function resetCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-out-fit' }>, naturalHeight: number, dimensions: ReturnType<typeof fitDimensions>) {
+function resetCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-fit' }>, naturalHeight: number, dimensions: ReturnType<typeof fitDimensions>) {
   const cardRect = target.front.getBoundingClientRect();
-  target.panel.style.height = `${naturalHeight}px`;
-  gsap.set(target.front, { opacity: 1 });
+  const entering = target.direction === 'in';
+  target.panel.style.height = `${entering ? dimensions.panelHeight : naturalHeight}px`;
+  gsap.set(target.front, { opacity: entering ? 0 : 1 });
   gsap.set(target.mask, {
     left: dimensions.stageLeft,
     top: dimensions.stageTop,
     width: dimensions.stageWidth,
     height: dimensions.panelHeight,
-    clipPath: dimensions.clipFrom,
-    autoAlpha: 0,
+    clipPath: entering ? 'inset(0px)' : dimensions.clipFrom,
+    autoAlpha: entering ? 1 : 0,
     willChange: 'clip-path',
   });
   gsap.set(target.source, {
@@ -160,16 +163,16 @@ function resetCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-out-f
     top: dimensions.sourceTop,
     width: cardRect.width,
     height: cardRect.height,
-    x: 0,
-    y: 0,
-    scaleX: 1,
-    scaleY: 1,
+    x: entering ? dimensions.sourceX : 0,
+    y: entering ? dimensions.sourceY : 0,
+    scaleX: entering ? dimensions.sourceScaleX : 1,
+    scaleY: entering ? dimensions.sourceScaleY : 1,
     transformOrigin: 'top left',
     willChange: 'transform',
   });
 }
 
-function attachCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-out-fit' }>) {
+function attachCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-fit' }>) {
   const cleanupPin = attachTransitionPin(target);
   const [start, end] = target.range;
   let naturalHeight = naturalPanelHeight(target.panel);
@@ -199,6 +202,7 @@ function attachCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-out-
       else delete target.pinElement.dataset.storyPrefixArtActive;
     }
   };
+  if (target.direction === 'in') setArtStacked(true);
   const duration = end - start;
   const timeline = gsap.timeline({
     scrollTrigger: {
@@ -217,25 +221,32 @@ function attachCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-out-
       },
       onUpdate: self => {
         setActive(self.progress > start && self.progress < end);
-        setArtStacked(self.progress >= start && self.progress < 1);
+        setArtStacked(target.direction === 'in' ? self.progress < 1 : self.progress >= start && self.progress < 1);
       },
       onLeave: () => { setActive(false); setArtStacked(false); },
       onLeaveBack: () => { setActive(false); setArtStacked(false); },
     },
   });
   timeline.to({}, { duration: 1 }, 0);
-  timeline.to(target.panel, { height: () => dimensions.panelHeight, duration, ease: 'none' }, start);
+  timeline.to(target.panel, {
+    height: () => target.direction === 'in' ? naturalHeight : dimensions.panelHeight,
+    duration, ease: 'none',
+  }, start);
   timeline.to(target.mask, {
-    clipPath: 'inset(0px)', autoAlpha: 1,
+    clipPath: target.direction === 'in' ? () => dimensions.clipFrom : 'inset(0px)',
+    autoAlpha: 1,
     duration, ease: 'none',
   }, start);
   timeline.to(target.source, {
-    x: () => dimensions.sourceX, y: () => dimensions.sourceY,
-    scaleX: () => dimensions.sourceScaleX, scaleY: () => dimensions.sourceScaleY,
+    x: () => target.direction === 'in' ? 0 : dimensions.sourceX,
+    y: () => target.direction === 'in' ? 0 : dimensions.sourceY,
+    scaleX: () => target.direction === 'in' ? 1 : dimensions.sourceScaleX,
+    scaleY: () => target.direction === 'in' ? 1 : dimensions.sourceScaleY,
     duration, ease: 'none',
   }, start);
   timeline.to(target.front, {
-    opacity: 0, duration: duration * (0.35 / 0.5), ease: 'none',
+    opacity: target.direction === 'in' ? 1 : 0,
+    duration: duration * (0.35 / 0.5), ease: 'none',
   }, start + duration * (0.02 / 0.5));
   return () => {
     setActive(false);
@@ -254,7 +265,7 @@ export function attachStoryAnimations(root: HTMLElement, targets: readonly Scrol
   media.add('(prefers-reduced-motion: no-preference)', () => {
     const cleanups: Array<() => void> = [];
     for (const target of targets) {
-      if (target.kind === 'card-out-fit') {
+      if (target.kind === 'card-fit') {
         cleanups.push(attachCardFit(target));
         continue;
       }

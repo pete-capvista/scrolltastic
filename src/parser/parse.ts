@@ -44,6 +44,23 @@ export function parseStory(input: unknown): NormalizedStory {
   const document = structuredClone(value);
   const issues: Diagnostic[] = [];
   const ids = new Set<string>();
+  let pinnedCardTransitionCount = 0;
+  if (['0.6', '0.7'].includes(document.version)) {
+    document.body.containers.forEach((container, ci) => container.flow.forEach((item, pi) => {
+      if (item.type !== 'panel') return;
+      item.frames.forEach((frame, fi) => {
+        if (frame.type === 'card' && frame.artwork?.transition && frame.artwork.transition.scrollMode !== 'flow') {
+          pinnedCardTransitionCount++;
+          if (pinnedCardTransitionCount > 1) {
+            issues.push({
+              path: `/body/containers/${ci}/flow/${pi}/frames/${fi}/artwork/transition/scrollMode`,
+              message: 'Only one pinned Card transition per story is supported. Set scrollMode to "flow" on other transitions.',
+            });
+          }
+        }
+      });
+    }));
+  }
   const checkId = (id: string | undefined, path: string) => {
     if (!id) return;
     if (ids.has(id)) issues.push({ path: `${path}/id`, message: `Duplicate ID: ${id}.` });
@@ -88,13 +105,19 @@ export function parseStory(input: unknown): NormalizedStory {
           if (frame.artwork?.transition) {
             const transition = frame.artwork.transition;
             const presentation = transition.presentation;
-            if (presentation === 'crop' && !['0.5', '0.6'].includes(document.version)) issue('artwork/transition', 'Standard-card OUT + CROP requires document version 0.5 or later.');
-            if (presentation === 'fit' && document.version !== '0.6') issue('artwork/transition', 'Standard-card OUT + FIT requires document version 0.6.');
-            if (document.version !== '0.6' && transition.scrollMode) issue('artwork/transition/scrollMode', 'scrollMode requires document version 0.6.');
-            if (presentation === 'fit' && transition.focus) issue('artwork/transition/focus', 'OUT + FIT does not accept a focus point.');
-            const [start, end] = transition.outRange ?? (presentation === 'fit' ? [0.18, 0.68] : [0.18, 0.73]);
-            if (start >= end) issue('artwork/transition/outRange', 'OUT transition range start must be less than its end.');
-            if (presentation === 'fit' && !['auto', 'content'].includes(item.height?.mode ?? 'auto')) issue('artwork/transition', 'OUT + FIT requires a Panel with auto or content height.');
+            const direction = transition.direction;
+            if (presentation === 'crop' && (direction !== 'out' || !['0.5', '0.6', '0.7'].includes(document.version))) issue('artwork/transition', 'Standard-card OUT + CROP requires document version 0.5 or later.');
+            if (presentation === 'fit' && direction === 'out' && !['0.6', '0.7'].includes(document.version)) issue('artwork/transition', 'Standard-card OUT + FIT requires document version 0.6 or later.');
+            if (presentation === 'fit' && direction === 'in' && document.version !== '0.7') issue('artwork/transition', 'Standard-card IN + FIT requires document version 0.7.');
+            if (direction === 'in' && presentation !== 'fit') issue('artwork/transition', 'Only IN + FIT is supported; IN + CROP is not implemented.');
+            if (!['0.6', '0.7'].includes(document.version) && transition.scrollMode) issue('artwork/transition/scrollMode', 'scrollMode requires document version 0.6 or later.');
+            if (presentation === 'fit' && transition.focus) issue('artwork/transition/focus', 'FIT transitions do not accept a focus point.');
+            if (direction === 'out' && transition.inRange) issue('artwork/transition/inRange', 'inRange is only valid for an IN transition.');
+            if (direction === 'in' && transition.outRange) issue('artwork/transition/outRange', 'outRange is only valid for an OUT transition.');
+            const range = direction === 'in' ? transition.inRange : transition.outRange;
+            const [start, end] = range ?? (presentation === 'fit' ? [0.18, 0.68] : [0.18, 0.73]);
+            if (start >= end) issue(`artwork/transition/${direction === 'in' ? 'inRange' : 'outRange'}`, `${direction.toUpperCase()} transition range start must be less than its end.`);
+            if (presentation === 'fit' && !['auto', 'content'].includes(item.height?.mode ?? 'auto')) issue('artwork/transition', 'FIT transitions require a Panel with auto or content height.');
           }
         }
         if (frame.type !== 'background' && flow !== 'normal' && !frame.position) issue('position', 'Overlay and overflow Frames require a position.');

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "StoryDocument",
-  "description": "Scrolltastic renderer contract 0.1 through 0.6. Unsupported capabilities are rejected.",
+  "description": "Scrolltastic renderer contract 0.1 through 0.7. Unsupported capabilities are rejected.",
   "type": "object",
   "properties": {
     "version": {
@@ -12,9 +12,10 @@
         "0.3",
         "0.4",
         "0.5",
-        "0.6"
+        "0.6",
+        "0.7"
       ],
-      "description": "Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT."
+      "description": "Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT; version 0.7 adds IN + FIT."
     },
     "body": {
       "$ref": "#/definitions/Body"
@@ -753,10 +754,16 @@
             "transition": {
               "type": "object",
               "properties": {
-                "direction": { "type": "string", "const": "out" },
+                "direction": { "type": "string", "enum": ["out", "in"] },
                 "presentation": { "type": "string", "enum": ["crop", "fit"] },
                 "scrollMode": { "type": "string", "enum": ["pin", "flow"] },
                 "outRange": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": { "type": "number", "minimum": 0, "maximum": 1 }
+                },
+                "inRange": {
                   "type": "array",
                   "minItems": 2,
                   "maxItems": 2,

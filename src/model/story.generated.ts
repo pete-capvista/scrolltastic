@@ -56,13 +56,13 @@ export type Asset = string;
 export type MaskShape = EllipseMaskShape | RoundedRectMaskShape | PolygonMaskShape;
 
 /**
- * Scrolltastic renderer contract 0.1 through 0.6. Unsupported capabilities are rejected.
+ * Scrolltastic renderer contract 0.1 through 0.7. Unsupported capabilities are rejected.
  */
 export interface StoryDocument {
   /**
-   * Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT.
+   * Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT; version 0.7 adds IN + FIT.
    */
-  version: "0.1" | "0.2" | "0.3" | "0.4" | "0.5" | "0.6";
+  version: "0.1" | "0.2" | "0.3" | "0.4" | "0.5" | "0.6" | "0.7";
   body: Body;
 }
 /**
@@ -268,7 +268,7 @@ export interface CardFrame {
   };
   artwork?: {
     transition: {
-      direction: "out";
+      direction: "out" | "in";
       presentation: "crop" | "fit";
       scrollMode?: "pin" | "flow";
       /**
@@ -276,6 +276,11 @@ export interface CardFrame {
        * @maxItems 2
        */
       outRange?: [number, number];
+      /**
+       * @minItems 2
+       * @maxItems 2
+       */
+      inRange?: [number, number];
       focus?: {
         x: number;
         y: number;

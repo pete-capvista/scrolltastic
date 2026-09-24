@@ -10,7 +10,7 @@ export type ScrollAnimationTarget =
   | { kind: 'reveal'; panel: HTMLElement; content: HTMLElement; config: RevealAnimation }
   | { kind: 'pull-focus'; panel: HTMLElement; placement: HTMLElement; content: HTMLElement; shape: MaskShape; range: [number, number] }
   | { kind: 'card-out-crop'; panel: HTMLElement; pinElement?: HTMLElement; scrollMode: 'pin' | 'flow'; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: CardFrame['cardGeometry']['artWindow']; range: [number, number]; focus: { x: number; y: number } }
-  | { kind: 'card-out-fit'; panel: HTMLElement; pinElement?: HTMLElement; scrollMode: 'pin' | 'flow'; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: CardFrame['cardGeometry']['artWindow']; aspectRatio: number; range: [number, number] };
+  | { kind: 'card-fit'; panel: HTMLElement; pinElement?: HTMLElement; scrollMode: 'pin' | 'flow'; direction: 'in' | 'out'; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: CardFrame['cardGeometry']['artWindow']; aspectRatio: number; range: [number, number] };
 export interface StoryHandle {
   ready: Promise<void>;
   elements: ReadonlyMap<string, HTMLElement>;
@@ -114,16 +114,19 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
             transitionLayer.append(mask);
             if (isFit) {
               animations.push({
-                kind: 'card-out-fit', panel, front, mask, source,
-                scrollMode: story.version === '0.6' ? frame.artwork.transition.scrollMode ?? 'pin' : 'flow',
+                kind: 'card-fit', panel, front, mask, source,
+                direction: frame.artwork.transition.direction,
+                scrollMode: ['0.6', '0.7'].includes(story.version) ? frame.artwork.transition.scrollMode ?? 'pin' : 'flow',
                 artWindow: frame.cardGeometry.artWindow,
                 aspectRatio: frame.aspectRatio,
-                range: frame.artwork.transition.outRange ?? [0.18, 0.68],
+                range: frame.artwork.transition.direction === 'in'
+                  ? frame.artwork.transition.inRange ?? [0.18, 0.68]
+                  : frame.artwork.transition.outRange ?? [0.18, 0.68],
               });
             } else {
               animations.push({
                 kind: 'card-out-crop', panel, front, mask, source,
-                scrollMode: story.version === '0.6' ? frame.artwork.transition.scrollMode ?? 'pin' : 'flow',
+                scrollMode: ['0.6', '0.7'].includes(story.version) ? frame.artwork.transition.scrollMode ?? 'pin' : 'flow',
                 artWindow: frame.cardGeometry.artWindow,
                 range: frame.artwork.transition.outRange ?? [0.18, 0.73],
                 focus: frame.artwork.transition.focus ?? { x: 0.5, y: 0.5 },
@@ -148,7 +151,7 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
   }
   const pinPrefixes = new Map<HTMLElement, HTMLElement>();
   for (const target of animations) {
-    if ((target.kind === 'card-out-crop' || target.kind === 'card-out-fit') && target.scrollMode === 'pin') {
+    if ((target.kind === 'card-out-crop' || target.kind === 'card-fit') && target.scrollMode === 'pin') {
       target.pinElement = pinPrefixes.get(target.panel) ?? wrapStoryPrefixThrough(body, target.panel);
       pinPrefixes.set(target.panel, target.pinElement);
     }

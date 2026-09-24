@@ -51,6 +51,31 @@ describe('document contract', () => {
     const bleed: any = minimal(); bleed.body.containers[0].flow[0].frames[0].bleed = { top: true };
     expect(() => parseStory(bleed)).toThrow(StoryValidationError);
   });
+  it('accepts only versioned standard-card IN + FIT declarations', () => {
+    const input: any = minimal();
+    input.version = '0.7';
+    input.body.containers[0].flow[0].frames = [{
+      type: 'card', cardType: 'standard', asset: 'assets/card.svg', alt: 'Test card', aspectRatio: .7,
+      cardGeometry: { artWindow: { x: .1, y: .1, width: .8, height: .4 } },
+      artwork: { transition: { direction: 'in', presentation: 'fit', inRange: [.2, .8] } },
+    }];
+    expect(parseStory(input).version).toBe('0.7');
+    const twoPinned: any = structuredClone(input);
+    twoPinned.body.containers[0].flow.push({
+      type: 'panel', id: 'second', frames: [structuredClone(twoPinned.body.containers[0].flow[0].frames[0])],
+    });
+    expect(issues(twoPinned).some(i => i.message.includes('Only one pinned Card transition'))).toBe(true);
+    twoPinned.body.containers[0].flow[1].frames[0].artwork.transition.scrollMode = 'flow';
+    expect(parseStory(twoPinned).version).toBe('0.7');
+    const legacy: any = structuredClone(input); legacy.version = '0.6';
+    expect(issues(legacy).some(i => i.message.includes('version 0.7'))).toBe(true);
+    const wrongRange: any = structuredClone(input);
+    wrongRange.body.containers[0].flow[0].frames[0].artwork.transition.outRange = [.1, .9];
+    expect(issues(wrongRange).some(i => i.path.endsWith('/outRange'))).toBe(true);
+    const crop: any = structuredClone(input);
+    crop.body.containers[0].flow[0].frames[0].artwork.transition.presentation = 'crop';
+    expect(issues(crop).some(i => i.message.includes('IN + CROP'))).toBe(true);
+  });
   it('requires height-producing content and positions for overflow', () => {
     const doc: any = minimal();
     doc.body.containers[0].flow[0].height = { mode: 'content' };

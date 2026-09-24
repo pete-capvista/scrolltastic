@@ -2457,8 +2457,8 @@ Authentication, hosted persistence and the creator editor follow later.
 Masks are added by contract 0.3 in section 64. Static standard Cards are
 added by contract 0.4 in section 65. The first Card-to-art transition is
 added by contract 0.5 in section 66. OUT + FIT is added by contract 0.6 in
-section 67. Other transitions, Beats and further GSAP animation types are
-subsequent slices.
+section 67, and IN + FIT by contract 0.7 in section 68. Other transitions,
+Beats and further GSAP animation types are subsequent slices.
 
 The implementation plan and remaining language decisions are recorded
 in [the first-slice plan](docs/first-renderer-slice.md). Proposed details
@@ -2520,9 +2520,10 @@ Platform references: [Vite on Vercel](https://vercel.com/docs/frameworks/fronten
 
 The first executable contract is `src/schema/story.schema.json` (JSON
 Schema draft-07). Version 0.1 documents declare one `body` with UUID v4
-`id`, nonempty `title`, and `containers`; sections 63–67 define additive
+`id`, nonempty `title`, and `containers`; sections 63–68 define additive
 version 0.2 scroll reveals, version 0.3 Mask Frames, version 0.4 static
-standard Card Frames, version 0.5 OUT + CROP and version 0.6 OUT + FIT. Generated
+standard Card Frames, version 0.5 OUT + CROP, version 0.6 OUT + FIT and
+version 0.7 IN + FIT. Generated
 TypeScript comes from that schema.
 The parser additionally checks cross-document
 IDs and layout combinations; it never coerces values or strips unknown
@@ -2567,13 +2568,14 @@ not a claim that every v4 feature is implemented.
   External URLs, traversal, query strings and encoded paths are rejected.
   Packaged SVG fixture artwork is original; this does not define a future
   upload sanitization policy.
-- Unknown fields and unsupported features (including IN/BOTH Card transitions,
+- Unknown fields and unsupported features (including IN + CROP/BOTH Card transitions,
   full-art Cards, Beats,
   animation in version 0.1, bleed and legacy `panels`) fail with a diagnostic.
   Version 0.2 adds only the reveal described in section 63; version 0.3
   adds only Masks described in section 64; version 0.4 adds static standard
   Cards described in section 65; version 0.5 adds OUT + CROP described in
-  section 66; version 0.6 adds OUT + FIT described in section 67. A legacy
+  section 66; version 0.6 adds OUT + FIT described in section 67; version 0.7
+  adds IN + FIT described in section 68. A legacy
   `panels` document must migrate to `flow` before rendering.
 
 The Body title is rendered once as the story heading. Meaningful Frames
@@ -2756,8 +2758,45 @@ would conflict with the animated contraction. New Card transitions pin the
 story prefix through the active Card by default for the duration of the
 transition. This holds the visible body above the Card in place while later
 Panels continue moving underneath it. Set `"scrollMode": "flow"` to opt out
-of pinning. Contract 0.5 stories retain their unpinned behavior. The pin
+of pinning. Only one pinned Card transition is supported per story; other
+transitions must explicitly use `scrollMode: "flow"` to avoid nested pin
+wrappers. Contract 0.5 stories retain their unpinned behavior. The pin
 trigger uses no added pin spacing, and a scrubbed trigger drives the reversible
 visual transition; reduced motion leaves the static, accessible full Card
 Frame visible. OUT + CROP remains supported from 0.5; IN and BOTH directions
 remain unsupported in 0.6.
+
+# 68. Standard Card IN + FIT Slice 0.7
+
+Version 0.7 adds IN + FIT. It begins with the full artwork at its
+artwork-derived height and resolves into the physical standard Card. It uses
+the existing complete card-front asset and normalized `cardGeometry.artWindow`:
+the renderer expands the clip from the Panel bounds into the card artwork
+window, transforms the source back to its card dimensions, grows the Panel to
+its natural scene height, and reveals the physical Card Frame. One scrubbed
+timeline drives the complete transition and reverses naturally with scrolling.
+
+```json
+{
+  "artwork": {
+    "transition": {
+      "direction": "in",
+      "presentation": "fit",
+      "inRange": [0.18, 0.68]
+    }
+  }
+}
+```
+
+`inRange` is optional, normalized to Panel entry/exit progress, defaults to
+`[0.18, 0.68]`, and must satisfy `0 <= start < end <= 1`. `outRange` is not
+valid for IN; `focus` is not accepted because FIT preserves the full artwork.
+The Panel must use `auto` or `content` height. IN + FIT pins the story prefix
+through the active Card by default and reserves the authored range as native
+scroll distance, so the reader can complete the transition even near the end
+of a short story. `scrollMode: "flow"` opts out of pinning and that reserved
+distance. OUT + FIT retains its zero-spacing pin behavior. A story can have
+one pinned Card transition; other transitions must set `scrollMode: "flow"`.
+At the start of the range the full-width artwork is visible; after the range
+the physical card is visible. Reduced-motion mode leaves the accessible
+static Card Frame visible. IN + CROP and BOTH transitions remain unsupported.

@@ -8,5 +8,8 @@ The three card-front images live in `assets/`; `story.json` references them
 as standard Card Frames. Lunora uses OUT + FIT: the renderer holds the story
 prefix through Lunora in place, preserves the full artwork, and expands the
 normalized artwork window to the Panel width. The following story content
-scrolls up underneath to meet it. Pinning ends with the transition; use
-`"scrollMode": "flow"` to opt out. Dravion and Volgarr remain static.
+scrolls up underneath to meet it. Dravion demonstrates IN + FIT: it begins as
+full-width artwork and resolves into its card as the reader scrolls. Lunora
+uses the default pin mode; Dravion opts into `"scrollMode": "flow"` because
+this renderer supports one pinned Card transition per story. Volgarr remains
+static.

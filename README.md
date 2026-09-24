@@ -70,7 +70,7 @@ provider remain future work. Fixture UUIDs are public test data.
 
 ## Design
 
-- [Canonical specification](scrolltastic_design_spec_v4.md), including contracts 0.1–0.6
+- [Canonical specification](scrolltastic_design_spec_v4.md), including contracts 0.1–0.7
 - [First renderer slice](docs/first-renderer-slice.md)
 - [JSON Schema](src/schema/story.schema.json)
 - [Contributor instructions](AGENTS.md)
@@ -79,9 +79,9 @@ Supported: Body, Container, Panel, Space, Background, Image, Narrative,
 Dialogue, three Frame flow modes, positioning, four Panel height modes,
 reversible Narrative/Dialogue reveals (0.2), shaped Mask Frames with
 pull-focus transitions (0.3), static standard Card Frames (0.4), and
-standard-card OUT + CROP transitions (0.5), and pinned OUT + FIT transitions
-(0.6). New Card transitions pin the story prefix by default; set
-`"scrollMode": "flow"` to keep ordinary document scrolling. IN/BOTH
-transitions, full-art Cards, bleed, other animation types, Beats and publishing
-are not implemented;
+standard-card OUT + CROP (0.5), OUT + FIT (0.6), and IN + FIT (0.7).
+Contract 0.6+ transitions pin the story prefix by default; set
+`"scrollMode": "flow"` to opt out. One pinned Card transition is supported
+per story; additional transitions must use flow mode. IN + CROP, BOTH, full-art Cards, bleed,
+other animation types, Beats and publishing are not implemented;
 unsupported declarations fail validation rather than being ignored.
