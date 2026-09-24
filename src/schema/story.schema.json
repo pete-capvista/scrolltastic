@@ -1,12 +1,18 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "StoryDocument",
-  "description": "Scrolltastic static renderer contract 0.1. Unsupported capabilities are rejected.",
+  "description": "Scrolltastic renderer contract 0.1 through 0.4. Unsupported capabilities are rejected.",
   "type": "object",
   "properties": {
     "version": {
       "type": "string",
-      "const": "0.1"
+      "enum": [
+        "0.1",
+        "0.2",
+        "0.3",
+        "0.4"
+      ],
+      "description": "Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Card Frames."
     },
     "body": {
       "$ref": "#/definitions/Body"
@@ -266,6 +272,9 @@
         "shape": {
           "type": "string",
           "const": "oblong"
+        },
+        "scrollAnimation": {
+          "$ref": "#/definitions/RevealAnimation"
         }
       },
       "required": [
@@ -303,6 +312,9 @@
         "shape": {
           "type": "string",
           "const": "fat-circle"
+        },
+        "scrollAnimation": {
+          "$ref": "#/definitions/RevealAnimation"
         }
       },
       "required": [
@@ -324,6 +336,12 @@
         },
         {
           "$ref": "#/definitions/DialogueFrame"
+        },
+        {
+          "$ref": "#/definitions/MaskFrame"
+        },
+        {
+          "$ref": "#/definitions/CardFrame"
         }
       ],
       "type": "object",
@@ -471,6 +489,264 @@
         "title",
         "containers"
       ],
+      "additionalProperties": false
+    },
+    "RevealAnimation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "reveal"
+        },
+        "start": {
+          "type": "string",
+          "enum": [
+            "top bottom",
+            "top 90%",
+            "top 82%",
+            "top 70%",
+            "top 55%",
+            "top center"
+          ]
+        },
+        "end": {
+          "type": "string",
+          "enum": [
+            "top 90%",
+            "top 82%",
+            "top 70%",
+            "top 55%",
+            "top center",
+            "bottom top"
+          ]
+        },
+        "from": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "yPercent": {
+              "type": "number",
+              "minimum": -12,
+              "maximum": 12
+            },
+            "scale": {
+              "type": "number",
+              "minimum": 0.9,
+              "maximum": 1.1
+            }
+          }
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "MaskShape": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/EllipseMaskShape"
+        },
+        {
+          "$ref": "#/definitions/RoundedRectMaskShape"
+        },
+        {
+          "$ref": "#/definitions/PolygonMaskShape"
+        }
+      ],
+      "type": "object",
+      "discriminator": {
+        "propertyName": "type"
+      }
+    },
+    "EllipseMaskShape": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "ellipse"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "RoundedRectMaskShape": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "rounded-rect"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "PolygonMaskShape": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "polygon"
+        },
+        "points": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      },
+      "required": [
+        "type",
+        "points"
+      ],
+      "additionalProperties": false
+    },
+    "MaskFocusTransition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "pull-focus"
+        },
+        "range": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "MaskFrame": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "flow": {
+          "type": "string",
+          "const": "overlay"
+        },
+        "position": {
+          "$ref": "#/definitions/Position"
+        },
+        "type": {
+          "type": "string",
+          "const": "mask"
+        },
+        "shape": {
+          "$ref": "#/definitions/MaskShape"
+        },
+        "content": {
+          "type": "object",
+          "properties": {
+            "asset": {
+              "$ref": "#/definitions/Asset"
+            },
+            "alt": {
+              "type": "string"
+            },
+            "fit": {
+              "type": "string",
+              "enum": [
+                "cover",
+                "contain"
+              ]
+            },
+            "focus": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "asset",
+            "alt"
+          ],
+          "additionalProperties": false
+        },
+        "transition": {
+          "$ref": "#/definitions/MaskFocusTransition"
+        }
+      },
+      "required": [
+        "type",
+        "position",
+        "shape",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "CardFrame": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/Id" },
+        "flow": { "type": "string", "enum": ["normal", "overlay", "overflow"] },
+        "position": { "$ref": "#/definitions/Position" },
+        "type": { "type": "string", "const": "card" },
+        "cardType": { "type": "string", "const": "standard" },
+        "asset": { "$ref": "#/definitions/Asset" },
+        "alt": { "type": "string", "minLength": 1 },
+        "aspectRatio": { "type": "number", "exclusiveMinimum": 0 },
+        "cardGeometry": {
+          "type": "object",
+          "properties": {
+            "artWindow": {
+              "type": "object",
+              "properties": {
+                "x": { "type": "number", "minimum": 0, "maximum": 1 },
+                "y": { "type": "number", "minimum": 0, "maximum": 1 },
+                "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+                "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+              },
+              "required": ["x", "y", "width", "height"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["artWindow"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["type", "cardType", "asset", "alt", "aspectRatio", "cardGeometry"],
       "additionalProperties": false
     }
   }

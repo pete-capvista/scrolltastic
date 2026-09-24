@@ -1,10 +1,10 @@
 # First renderer slice
 
-Status: static implementation complete and verified locally.
+Status: static renderer, scroll reveals, Mask Frames, pull-focus and static standard Cards are implemented through contract 0.4.
 
 The canonical language and hosting contract are in
 [the design specification](../scrolltastic_design_spec_v4.md), especially
-sections 29–40 and 55–62. This document records the implemented first-slice
+sections 29–40 and 55–65. This document records the implemented renderer
 boundaries and the capabilities deferred to subsequent slices.
 
 ## Agreed scope
@@ -15,7 +15,7 @@ boundaries and the capabilities deferred to subsequent slices.
 - Permanent, random UUID v4 story URLs suitable for public QR access.
 - Public reading without login; authenticated ownership for drafts and editing.
 - Separate reader, creator, renderer and publication responsibilities.
-- Static layout first, with two independently addressable local fixtures.
+- Static layout first, with three independently addressable local fixtures.
 - Explicit `fixed` and `viewport` Panel heights are exact; `content` grows naturally.
 - Meaningful Frames retain authored DOM order, with per-Frame wrappers where needed.
 - Vercel-compatible hosting, with durable story storage separate from deployments.
@@ -32,7 +32,7 @@ published documents need an explicit compatibility or migration strategy.
 | `model/` | Discriminated document types generated from the schema. |
 | `parser/` | JSON parsing, semantic checks and pure default normalization. |
 | `renderer/` | Structural DOM construction and element-reference registry. |
-| `frames/` | Background, Image, Narrative and Dialogue renderers. |
+| `frames/` | Background, Image, Narrative, Dialogue, Mask and Card renderers. |
 | `layout/` | Height, placement, clipping and batched layout invalidation. |
 | `assets/` | Package-relative URLs, dimensions, readiness and failure handling. |
 | Reader host | Route resolution, configuration loading and renderer lifecycle. |
@@ -115,7 +115,7 @@ in durable storage and publish independently of website deployments.
 
 ## Acceptance checks
 
-- Both `/s/<story-id>` routes load their own configuration and assets,
+- All three `/s/<story-id>` routes load their own configuration and assets,
   including when opened directly or refreshed.
 - Relative asset resolution stays within the selected package; missing
   stories show a reader error rather than a different story or draft.
@@ -125,6 +125,10 @@ in durable storage and publish independently of website deployments.
 - Natural Image heights follow aspect ratios at narrow and wide viewports.
 - Space retains its authored height when text overlaps it.
 - Overlay/overflow Frames do not alter semantic Panel height.
+- Mask Frames clip their image to ellipse, rounded-rectangle or polygon shapes;
+  pull-focus expands the authored mask through the configured Panel range.
+- Standard Cards render the complete authored front, reserve intrinsic geometry,
+  expose normalized artwork-window metadata, and preserve alternative text.
 - Overflow remains visible; adjacent image compositions have no accidental gap.
 - Text is readable, authored reading order survives layering, and native
   scrolling works with reduced-motion preferences enabled.
@@ -132,8 +136,26 @@ in durable storage and publish independently of website deployments.
 - Route changes and repeated mount/destroy cycles leave no stale content,
   listeners or observers.
 
-Later slices add animation declarations, Masks, Standard Card transitions,
-Beat resolution and semantic Advance/Reverse before Flip recognition.
+The first scroll reveal adds the version 0.2 `scrollAnimation` contract,
+GSAP / ScrollTrigger setup after layout, media-query cleanup, and fixture
+reveals. Browser inspection confirmed opacity scrubs in both directions,
+text stays in the accessibility tree, and reduced motion shows content
+fully. The production build and type checks pass. The automated test suites
+were not rerun for this slice.
+
+The Mask slice adds contract 0.3 shape geometry and the reversible
+pull-focus transition. Its schema, parser, image rendering and GSAP setup
+are covered by the production build and manual browser inspection.
+Automated test suites were not run for this slice.
+
+The trading-card slice adds contract 0.4 static standard Card Frames. It
+supports full card-front assets and declared normalized artwork-window
+geometry; card-to-art transitions and full-art cards remain deferred. The
+three-card fixture demonstrates the provided Lunora, Dravion and Volgarr
+assets in authored order.
+
+Later slices add Standard Card transitions, Beat resolution and
+semantic Advance/Reverse before Flip recognition.
 
 ## Verification results
 

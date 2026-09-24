@@ -1,0 +1,89 @@
+{
+  "version": "0.4",
+  "body": {
+    "id": "c6c6bfa1-145e-4d68-a2fd-cc94107b46ea",
+    "title": "Guardians of the First Light",
+    "containers": [
+      {
+        "type": "container",
+        "id": "field-guide",
+        "flow": [
+          {
+            "type": "panel",
+            "id": "lunora-entry",
+            "height": { "mode": "content" },
+            "frames": [
+              {
+                "type": "narrative",
+                "id": "lunora-caption",
+                "text": "Moonlight marks the first path through the dark.",
+                "scrollAnimation": { "type": "reveal" }
+              },
+              {
+                "type": "card",
+                "id": "lunora-card",
+                "cardType": "standard",
+                "asset": "assets/Lunora.png",
+                "alt": "Lunora trading card: a moonlit foxlike guardian beside a lake. The card shows HP 110, Moonlit Guidance, and Lunar Veil.",
+                "aspectRatio": 0.704878,
+                "cardGeometry": {
+                  "artWindow": { "x": 0.076, "y": 0.094, "width": 0.846, "height": 0.37 }
+                }
+              }
+            ]
+          },
+          { "type": "space", "height": "12svh" },
+          {
+            "type": "panel",
+            "id": "dravion-entry",
+            "height": { "mode": "content" },
+            "frames": [
+              {
+                "type": "narrative",
+                "id": "dravion-caption",
+                "text": "The current carries that light into the valleys.",
+                "scrollAnimation": { "type": "reveal" }
+              },
+              {
+                "type": "card",
+                "id": "dravion-card",
+                "cardType": "standard",
+                "asset": "assets/Dravion.png",
+                "alt": "Dravion trading card: a blue dragonlike water guardian above waterfalls. The card shows HP 150, Tidal Surge, and Aqua Dominion.",
+                "aspectRatio": 0.705379,
+                "cardGeometry": {
+                  "artWindow": { "x": 0.076, "y": 0.094, "width": 0.849, "height": 0.372 }
+                }
+              }
+            ]
+          },
+          { "type": "space", "height": "12svh" },
+          {
+            "type": "panel",
+            "id": "volgarr-entry",
+            "height": { "mode": "content" },
+            "frames": [
+              {
+                "type": "narrative",
+                "id": "volgarr-caption",
+                "text": "Far below, the sleeping fire answers.",
+                "scrollAnimation": { "type": "reveal" }
+              },
+              {
+                "type": "card",
+                "id": "volgarr-card",
+                "cardType": "standard",
+                "asset": "assets/Volgarr.png",
+                "alt": "Volgarr trading card: a dark, armored fire guardian before an erupting volcano. The card shows HP 170, Molten Roar, and Eruption Fang.",
+                "aspectRatio": 0.709046,
+                "cardGeometry": {
+                  "artWindow": { "x": 0.076, "y": 0.095, "width": 0.848, "height": 0.37 }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

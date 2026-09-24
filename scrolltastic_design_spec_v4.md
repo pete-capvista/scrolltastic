@@ -2454,7 +2454,9 @@ to one story.
 The local host demonstrates `/s/<story-id>` and supplies a package base
 URL. It is not a production account or publishing implementation.
 Authentication, hosted persistence and the creator editor follow later.
-Cards, Masks, Beats and GSAP animation are subsequent renderer slices.
+Masks are added by contract 0.3 in section 64. Static standard Cards are
+added by contract 0.4 in section 65. Card-to-art transitions, Beats and
+further GSAP animation types are subsequent slices.
 
 The implementation plan and remaining language decisions are recorded
 in [the first-slice plan](docs/first-renderer-slice.md). Proposed details
@@ -2478,8 +2480,8 @@ These decisions may evolve. Internal renderer changes should preserve the
 document contract. Language changes must update this specification,
 schema/types, examples and tests together. Before changing the meaning of
 existing published documents, define a versioning or migration strategy;
-do not silently reinterpret them. Exact version-field syntax is deferred
-to schema design.
+do not silently reinterpret them. The initial version-field syntax is
+defined in section 62; later language additions increment it.
 
 # 61. Vercel-Compatible Hosting
 
@@ -2515,9 +2517,12 @@ Platform references: [Vite on Vercel](https://vercel.com/docs/frameworks/fronten
 # 62. Static Document Contract 0.1
 
 The first executable contract is `src/schema/story.schema.json` (JSON
-Schema draft-07). Documents declare `version: "0.1"` and one `body` with
-UUID v4 `id`, nonempty `title`, and `containers`. Generated TypeScript
-comes from that schema. The parser additionally checks cross-document
+Schema draft-07). Version 0.1 documents declare one `body` with UUID v4
+`id`, nonempty `title`, and `containers`; sections 63–65 define additive
+version 0.2 scroll reveals, version 0.3 Mask Frames and version 0.4 static
+standard Card Frames. Generated
+TypeScript comes from that schema.
+The parser additionally checks cross-document
 IDs and layout combinations; it never coerces values or strips unknown
 properties. This contract is a supported subset of the wider design,
 not a claim that every v4 feature is implemented.
@@ -2560,8 +2565,12 @@ not a claim that every v4 feature is implemented.
   External URLs, traversal, query strings and encoded paths are rejected.
   Packaged SVG fixture artwork is original; this does not define a future
   upload sanitization policy.
-- Unknown fields and unsupported features (including Cards, Masks, Beats,
-  animation, bleed and legacy `panels`) fail with a diagnostic. A legacy
+- Unknown fields and unsupported features (including Card transitions,
+  full-art Cards, Beats,
+  animation in version 0.1, bleed and legacy `panels`) fail with a diagnostic.
+  Version 0.2 adds only the reveal described in section 63; version 0.3
+  adds only Masks described in section 64; version 0.4 adds static standard
+  Cards described in section 65. A legacy
   `panels` document must migrate to `flow` before rendering.
 
 The Body title is rendered once as the story heading. Meaningful Frames
@@ -2577,3 +2586,100 @@ Normal-flow content remains measurable at its natural size inside an
 exact-height Panel, but is visually clipped to the Panel bounds using
 per-Frame clipping. Only explicit overflow Frames may cross those bounds.
 Clipping is recomputed on layout changes, with reads and writes batched.
+
+# 63. Scroll Reveal Slice 0.2
+
+Version 0.2 adds an optional `scrollAnimation` declaration to Narrative
+and Dialogue Frames. Version 0.1 remains valid and static. The first
+supported declaration is a reversible, scrubbed `reveal` effect:
+
+```json
+{
+  "type": "narrative",
+  "text": "The mountain sent a signal.",
+  "scrollAnimation": {
+    "type": "reveal",
+    "start": "top 82%",
+    "end": "top 55%",
+    "from": { "opacity": 0, "yPercent": 8, "scale": 0.97 }
+  }
+}
+```
+
+`start` and `end` use a bounded ScrollTrigger position vocabulary. Start
+must resolve before end during forward document scroll. Defaults are `top
+82%` and `top 55%`. `from` values are optional and default to opacity 0,
+yPercent 8 and scale .97; opacity is bounded to 0..1, yPercent to -12..12,
+and scale to .9..1.1. The destination is visible at the declared end.
+Scrubbing is always enabled, with no pinning. The renderer creates one
+ScrollTrigger per declared reveal and destroys it with the story mount.
+
+Reveal transforms apply to the Frame content wrapper, leaving the
+positioning wrapper's anchor transform intact. Semantic text remains in
+the DOM and exposed to assistive technology at every animation state; the
+reveal changes opacity only. When
+`prefers-reduced-motion: reduce` is active, the renderer creates no reveal
+animations and displays all content. Changing the preference while the
+story is mounted updates the animation setup. Animation initialization
+follows measurable layout; ScrollTrigger recalculates trigger positions
+when responsive layout changes.
+
+`scrollAnimation` on other Frame types, unknown animation types, arbitrary
+GSAP property names, non-scrubbed timing and pin settings are unsupported in
+0.2 and fail validation. This bounded language surface keeps authored
+documents declarative and safe to validate while leaving later animation
+types open for design.
+
+# 64. Mask Frame Slice 0.3
+
+Version 0.3 adds shaped Mask Frames and an optional reversible pull-focus
+transition. Version 0.1 and 0.2 documents remain valid. A Mask is an
+overlay Frame positioned within a Panel; it does not establish or change
+Panel height. Its `position` requires an explicit non-auto `height` so
+the opening has stable geometry at responsive sizes. Width and height use
+the shared Frame dimensions, with percentages relative to the Panel.
+
+`shape` is one of `ellipse`, `rounded-rect`, or `polygon`. Polygon points
+are at least three normalized `[x, y]` coordinate pairs within 0..1 and
+define a closed clip. SVG paths remain future work. `content` identifies a
+package-relative image, meaningful `alt` text, optional `cover`/`contain`
+fit, and optional normalized focal coordinates; the default focus is
+center. The image is clipped to the shape and remains in authored DOM
+order.
+
+The only transition in 0.3 is `pull-focus`. Its optional normalized range
+defaults to `[0.20, 0.65]` and must satisfy `0 <= start < end <= 1`. The
+renderer maps that range onto a scrubbed ScrollTrigger spanning the Panel's
+entry through exit in the document. During the range, the Mask's positioned
+box expands to Panel bounds while its clip interpolates to a rectangle.
+There is no pinning; ordinary scroll remains canonical and reversing
+scroll reverses the effect. On reduced-motion settings the transition is
+omitted and the authored shaped viewport remains visible. Mask takeover is
+therefore the pull-focus end state; separate base-scene fade, blur, source
+push and timing controls are deferred.
+
+Mask Frames require version 0.3 and overlay flow. A pull-focus range with
+equal or reversed endpoints is invalid. The fixture demonstrates a polygon
+opening over a background scene and expanding to a full-Panel view.
+
+# 65. Static Standard Card Slice 0.4
+
+Version 0.4 adds the static standard Card Frame. Versions 0.1–0.3 remain
+valid. A standard Card references the complete card-front image, meaningful
+`alt` text, its width/height `aspectRatio`, and a normalized `cardGeometry`
+`artWindow` rectangle (`x`, `y`, `width`, `height`). The art window must fit
+inside the normalized card bounds. Its purpose is to preserve authored card
+geometry for later artwork extraction; this slice renders the full card
+front and does not crop or animate that window.
+
+Standard Cards default to normal flow and may establish natural Panel height.
+Their rendered width is responsive and centered, capped for larger screens;
+the image retains its declared ratio before loading. Overlay/overflow cards
+use the shared Frame positioning contract. Cards preserve authored reading
+order and expose the full image through alternative text.
+
+Only `cardType: "standard"` is supported in 0.4. Full-art Cards, separate
+artwork sources, presentation transforms, overlap, and OUT/IN/BOTH card-to-art
+transitions remain unsupported and fail validation. A Card Frame requires
+document version 0.4. The fixture uses three complete card-front assets and
+records the approximate artwork window for each.

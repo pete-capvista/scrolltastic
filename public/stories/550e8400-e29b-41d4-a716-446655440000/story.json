@@ -1,5 +1,5 @@
 {
-  "version": "0.1",
+  "version": "0.3",
   "body": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "title": "The light beyond the ridge",
@@ -35,6 +35,16 @@
                   "x": "5%",
                   "y": "-6%",
                   "width": "82%"
+                },
+                "scrollAnimation": {
+                  "type": "reveal",
+                  "start": "top 82%",
+                  "end": "top 55%",
+                  "from": {
+                    "opacity": 0,
+                    "yPercent": 8,
+                    "scale": 0.97
+                  }
                 }
               }
             ]
@@ -62,6 +72,16 @@
                   "y": "-12%",
                   "width": "54%",
                   "z": 25
+                },
+                "scrollAnimation": {
+                  "type": "reveal",
+                  "start": "top 82%",
+                  "end": "top 55%",
+                  "from": {
+                    "opacity": 0,
+                    "yPercent": 8,
+                    "scale": 0.97
+                  }
                 }
               },
               {
@@ -81,6 +101,16 @@
                   "x": "6%",
                   "y": "3rem",
                   "width": "82%"
+                },
+                "scrollAnimation": {
+                  "type": "reveal",
+                  "start": "top 82%",
+                  "end": "top 55%",
+                  "from": {
+                    "opacity": 0,
+                    "yPercent": 8,
+                    "scale": 0.97
+                  }
                 }
               }
             ]
@@ -103,6 +133,32 @@
                 "asset": "assets/scene.svg"
               },
               {
+                "type": "mask",
+                "id": "focus-mask",
+                "position": {
+                  "anchor": "left",
+                  "x": "5%",
+                  "y": "24%",
+                  "width": "52%",
+                  "height": "48%",
+                  "z": 15
+                },
+                "shape": {
+                  "type": "polygon",
+                  "points": [[0, 0.08], [0.88, 0], [1, 0.82], [0.12, 1]]
+                },
+                "content": {
+                  "asset": "assets/observatory.svg",
+                  "alt": "A closer view of the observatory doorway, framed by the signal's shifting light.",
+                  "fit": "cover",
+                  "focus": { "x": 0.5, "y": 0.45 }
+                },
+                "transition": {
+                  "type": "pull-focus",
+                  "range": [0.18, 0.78]
+                }
+              },
+              {
                 "type": "narrative",
                 "id": "signal-text",
                 "flow": "overlay",
@@ -110,6 +166,16 @@
                 "position": {
                   "anchor": "center",
                   "width": "80%"
+                },
+                "scrollAnimation": {
+                  "type": "reveal",
+                  "start": "top 82%",
+                  "end": "top 55%",
+                  "from": {
+                    "opacity": 0,
+                    "yPercent": 8,
+                    "scale": 0.97
+                  }
                 }
               }
             ]

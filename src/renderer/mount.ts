@@ -2,12 +2,17 @@ import { parseStory } from '../parser/parse';
 import { renderFrame } from '../frames/render';
 import { applyPanelHeight } from '../layout/position';
 import { watchLayout } from '../layout/lifecycle';
+import type { MaskShape, RevealAnimation } from '../model/story.generated';
 import './story.css';
 
 export interface MountOptions { assetBaseUrl: string; onLayout?: () => void }
+export type ScrollAnimationTarget =
+  | { kind: 'reveal'; panel: HTMLElement; content: HTMLElement; config: RevealAnimation }
+  | { kind: 'pull-focus'; panel: HTMLElement; placement: HTMLElement; content: HTMLElement; shape: MaskShape; range: [number, number] };
 export interface StoryHandle {
   ready: Promise<void>;
   elements: ReadonlyMap<string, HTMLElement>;
+  animations: readonly ScrollAnimationTarget[];
   destroy(): void;
 }
 const mounts = new WeakMap<HTMLElement, StoryHandle>();
@@ -15,6 +20,7 @@ const mounts = new WeakMap<HTMLElement, StoryHandle>();
 export function mountStory(root: HTMLElement, input: unknown, options: MountOptions): StoryHandle {
   const story = parseStory(input);
   const elements = new Map<string, HTMLElement>();
+  const animations: ScrollAnimationTarget[] = [];
   const body = document.createElement('div');
   body.className = 'story-body';
   body.dataset.storyId = story.body.id;
@@ -47,6 +53,15 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
       for (const frame of item.frames) {
         const slot = renderFrame(frame, options.assetBaseUrl);
         panel.append(slot);
+        if ('scrollAnimation' in frame && frame.scrollAnimation) {
+          const content = slot.querySelector<HTMLElement>('.frame-content');
+          if (content) animations.push({ kind: 'reveal', panel, content, config: frame.scrollAnimation });
+        }
+        if (frame.type === 'mask' && frame.transition?.type === 'pull-focus') {
+          const content = slot.querySelector<HTMLElement>('.frame-content');
+          const placement = slot.querySelector<HTMLElement>('.frame-placement');
+          if (content && placement) animations.push({ kind: 'pull-focus', panel, placement, content, shape: frame.shape, range: frame.transition.range ?? [0.2, 0.65] });
+        }
         if (frame.id) elements.set(frame.id, slot);
       }
       section.append(panel);
@@ -64,6 +79,7 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
   const handle: StoryHandle = {
     ready: lifecycle.ready,
     elements,
+    animations,
     destroy() {
       if (destroyed) return;
       destroyed = true;

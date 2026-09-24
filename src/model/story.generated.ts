@@ -33,7 +33,7 @@ export type Length = string;
  * This interface was referenced by `StoryDocument`'s JSON-Schema
  * via the `definition` "Frame".
  */
-export type Frame = BackgroundFrame | ImageFrame | NarrativeFrame | DialogueFrame;
+export type Frame = BackgroundFrame | ImageFrame | NarrativeFrame | DialogueFrame | MaskFrame | CardFrame;
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
  * via the `definition` "Offset".
@@ -49,12 +49,20 @@ export type Size = string;
  * via the `definition` "Asset".
  */
 export type Asset = string;
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "MaskShape".
+ */
+export type MaskShape = EllipseMaskShape | RoundedRectMaskShape | PolygonMaskShape;
 
 /**
- * Scrolltastic static renderer contract 0.1. Unsupported capabilities are rejected.
+ * Scrolltastic renderer contract 0.1 through 0.4. Unsupported capabilities are rejected.
  */
 export interface StoryDocument {
-  version: "0.1";
+  /**
+   * Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Card Frames.
+   */
+  version: "0.1" | "0.2" | "0.3" | "0.4";
   body: Body;
 }
 /**
@@ -150,6 +158,21 @@ export interface NarrativeFrame {
   type: "narrative";
   text: string;
   shape?: "oblong";
+  scrollAnimation?: RevealAnimation;
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "RevealAnimation".
+ */
+export interface RevealAnimation {
+  type: "reveal";
+  start?: "top bottom" | "top 90%" | "top 82%" | "top 70%" | "top 55%" | "top center";
+  end?: "top 90%" | "top 82%" | "top 70%" | "top 55%" | "top center" | "bottom top";
+  from?: {
+    opacity?: number;
+    yPercent?: number;
+    scale?: number;
+  };
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -162,6 +185,87 @@ export interface DialogueFrame {
   type: "dialogue";
   text: string;
   shape?: "fat-circle";
+  scrollAnimation?: RevealAnimation;
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "MaskFrame".
+ */
+export interface MaskFrame {
+  id?: Id;
+  flow?: "overlay";
+  position: Position;
+  type: "mask";
+  shape: MaskShape;
+  content: {
+    asset: Asset;
+    alt: string;
+    fit?: "cover" | "contain";
+    focus?: {
+      x: number;
+      y: number;
+    };
+  };
+  transition?: MaskFocusTransition;
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "EllipseMaskShape".
+ */
+export interface EllipseMaskShape {
+  type: "ellipse";
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "RoundedRectMaskShape".
+ */
+export interface RoundedRectMaskShape {
+  type: "rounded-rect";
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "PolygonMaskShape".
+ */
+export interface PolygonMaskShape {
+  type: "polygon";
+  /**
+   * @minItems 3
+   */
+  points: [[number, number], [number, number], [number, number], ...[number, number][]];
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "MaskFocusTransition".
+ */
+export interface MaskFocusTransition {
+  type: "pull-focus";
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  range?: [number, number];
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "CardFrame".
+ */
+export interface CardFrame {
+  id?: Id;
+  flow?: "normal" | "overlay" | "overflow";
+  position?: Position;
+  type: "card";
+  cardType: "standard";
+  asset: Asset;
+  alt: string;
+  aspectRatio: number;
+  cardGeometry: {
+    artWindow: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+  };
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema

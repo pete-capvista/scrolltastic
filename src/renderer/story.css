@@ -15,6 +15,12 @@
 .frame-content--image img { position: absolute; inset: 0; }
 .frame-slot--background .frame-placement { inset: 0; }
 .frame-content--background img { position: absolute; inset: 0; }
+.frame-slot--mask { overflow: visible; }
+.frame-content--mask { position: relative; overflow: hidden; }
+.frame-content--mask img { position: absolute; inset: 0; }
+.frame-slot--card { width: min(86%, 32rem); margin-inline: auto; }
+.frame-content--card { position: relative; overflow: hidden; border-radius: .9rem; filter: drop-shadow(0 1rem 1.6rem rgb(0 0 0 / 24%)); }
+.frame-content--card img { position: absolute; inset: 0; }
 .frame-content--narrative, .frame-content--dialogue { padding: 1.2rem 1.35rem; font-size: clamp(1rem, 3.9vw, 1.3rem); line-height: 1.5; overflow-wrap: anywhere; }
 .frame-content p { margin: 0; white-space: pre-wrap; }
 .frame-content--narrative { color: #fffdf5; background: #162d32; }

@@ -17,6 +17,7 @@ Open either fixture directly:
 
 - [The light beyond the ridge](http://localhost:5173/s/550e8400-e29b-41d4-a716-446655440000)
 - [Where the tide turns](http://localhost:5173/s/b670153e-79da-4bb4-9d69-1b8efb433287)
+- [Guardians of the First Light](http://localhost:5173/s/c6c6bfa1-145e-4d68-a2fd-cc94107b46ea)
 
 The homepage deliberately does not list stories. Fixtures and their original
 SVG artwork are under `public/stories/<story-id>/`. Both packages use an
@@ -69,12 +70,15 @@ provider remain future work. Fixture UUIDs are public test data.
 
 ## Design
 
-- [Canonical specification](scrolltastic_design_spec_v4.md), including contract 0.1
+- [Canonical specification](scrolltastic_design_spec_v4.md), including contracts 0.1–0.4
 - [First renderer slice](docs/first-renderer-slice.md)
 - [JSON Schema](src/schema/story.schema.json)
 - [Contributor instructions](AGENTS.md)
 
 Supported: Body, Container, Panel, Space, Background, Image, Narrative,
-Dialogue, three Frame flow modes, positioning and four Panel height modes.
-Cards, Masks, bleed, animation, Beats and publishing are not implemented;
-unsupported declarations fail validation rather than being ignored.
+Dialogue, three Frame flow modes, positioning, four Panel height modes,
+reversible Narrative/Dialogue reveals (0.2), shaped Mask Frames with
+pull-focus transitions (0.3), and static standard Card Frames (0.4).
+Card-to-art transitions, full-art Cards, bleed, other animation types, Beats
+and publishing are not implemented; unsupported declarations fail validation
+rather than being ignored.

@@ -1,5 +1,5 @@
 {
-  "version": "0.1",
+  "version": "0.2",
   "body": {
     "id": "b670153e-79da-4bb4-9d69-1b8efb433287",
     "title": "Where the tide turns",
@@ -50,7 +50,17 @@
               {
                 "type": "narrative",
                 "id": "letter-text",
-                "text": "The keeper left no address.\nOnly a note: follow the water home."
+                "text": "The keeper left no address.\nOnly a note: follow the water home.",
+                "scrollAnimation": {
+                  "type": "reveal",
+                  "start": "top 82%",
+                  "end": "top 55%",
+                  "from": {
+                    "opacity": 0,
+                    "yPercent": 8,
+                    "scale": 0.97
+                  }
+                }
               }
             ]
           },

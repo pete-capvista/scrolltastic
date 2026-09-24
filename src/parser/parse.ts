@@ -60,15 +60,38 @@ export function parseStory(input: unknown): NormalizedStory {
       const frames = item.frames.map((frame, fi): NormalizedFrame => {
         const fp = `${pp}/frames/${fi}`;
         checkId(frame.id, fp);
-        const flow = frame.flow ?? (frame.type === 'background' ? 'overlay' : 'normal');
+        const flow = frame.flow ?? (frame.type === 'background' || frame.type === 'mask' ? 'overlay' : 'normal');
         const issue = (field: string, message: string) => issues.push({ path: `${fp}/${field}`, message });
         if (frame.type === 'background' && frame.position) issue('position', 'Background fills its Panel; custom positioning is not supported in 0.1.');
+        if ('scrollAnimation' in frame && frame.scrollAnimation) {
+          if (document.version === '0.1') issue('scrollAnimation', 'Scroll reveals require document version 0.2 or later.');
+          const starts = ['top bottom', 'top 90%', 'top 82%', 'top 70%', 'top 55%', 'top center'];
+          const ends = ['top 90%', 'top 82%', 'top 70%', 'top 55%', 'top center', 'bottom top'];
+          const start = starts.indexOf(frame.scrollAnimation.start ?? 'top 82%');
+          const end = ends.indexOf(frame.scrollAnimation.end ?? 'top 55%') + 1;
+          if (start >= end) issue('scrollAnimation/end', 'Reveal end must follow start during forward scroll.');
+        }
+        if (frame.type === 'mask') {
+          if (document.version === '0.1' || document.version === '0.2') issue('type', 'Mask Frames require document version 0.3 or later.');
+          if (flow !== 'overlay') issue('flow', 'Mask Frames must use overlay flow.');
+          if (!frame.position.height || frame.position.height === 'auto') issue('position/height', 'Mask Frames require an explicit height.');
+          if (frame.transition?.range && frame.transition.range[0] >= frame.transition.range[1]) {
+            issue('transition/range', 'Pull-focus range start must be less than its end.');
+          }
+        }
+        if (frame.type === 'card') {
+          if (document.version !== '0.4') issue('type', 'Static standard Card Frames require document version 0.4.');
+          const { artWindow } = frame.cardGeometry;
+          if (artWindow.x + artWindow.width > 1 || artWindow.y + artWindow.height > 1) {
+            issue('cardGeometry/artWindow', 'The artwork window must fit within the normalized card bounds.');
+          }
+        }
         if (frame.type !== 'background' && flow !== 'normal' && !frame.position) issue('position', 'Overlay and overflow Frames require a position.');
         if (flow === 'normal' && frame.position && (frame.position.anchor !== 'top-left' || [frame.position.x, frame.position.y].some(v => v !== undefined && parseFloat(v) !== 0))) {
           issue('position', 'Normal Frames use top-left with zero offsets; use overlay or overflow for anchoring.');
         }
         if (frame.type === 'image' && frame.fit === 'width' && frame.position?.height && frame.position.height !== 'auto') issue('position/height', 'Image fit=width requires automatic height.');
-        if (frame.type === 'background') return { ...frame, flow: 'overlay' };
+        if (frame.type === 'background' || frame.type === 'mask') return { ...frame, flow: 'overlay' };
         return { ...frame, flow };
       });
       const height = item.height ?? { mode: 'auto' as const };

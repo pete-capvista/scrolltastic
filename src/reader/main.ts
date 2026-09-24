@@ -5,6 +5,7 @@ import './reader.css';
 
 const root = document.querySelector<HTMLElement>('#app')!;
 let current: StoryHandle | undefined;
+let animations: { destroy(): void } | undefined;
 let request: AbortController | undefined;
 let revision = 0;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -26,6 +27,8 @@ function message(title: string, description: string) {
 async function readRoute() {
   const run = ++revision;
   request?.abort();
+  animations?.destroy();
+  animations = undefined;
   current?.destroy();
   current = undefined;
   request = new AbortController();
@@ -60,10 +63,17 @@ async function readRoute() {
     current = mountStory(root, document, { assetBaseUrl });
     await current.ready;
     if (run !== revision) return;
+    if (current.animations.length) {
+      const { attachStoryAnimations } = await import('../animation/reveals');
+      if (run !== revision) return;
+      animations = attachStoryAnimations(current.elements.get(document.body.id)!, current.animations);
+    }
     window.document.title = `${document.body.title} · Scrolltastic`;
     root.dataset.ready = 'true';
   } catch (error) {
     if (run !== revision || (error instanceof DOMException && error.name === 'AbortError')) return;
+    animations?.destroy();
+    animations = undefined;
     current?.destroy();
     current = undefined;
     message('Story unavailable', error instanceof StoryValidationError
@@ -84,6 +94,7 @@ void readRoute();
 if (import.meta.hot) import.meta.hot.dispose(() => {
   revision++;
   request?.abort();
+  animations?.destroy();
   current?.destroy();
   window.removeEventListener('popstate', readRoute);
 });
