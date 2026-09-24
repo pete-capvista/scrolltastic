@@ -80,10 +80,15 @@ export function parseStory(input: unknown): NormalizedStory {
           }
         }
         if (frame.type === 'card') {
-          if (document.version !== '0.4') issue('type', 'Static standard Card Frames require document version 0.4.');
+          if (['0.1', '0.2', '0.3'].includes(document.version)) issue('type', 'Standard Card Frames require document version 0.4 or later.');
           const { artWindow } = frame.cardGeometry;
           if (artWindow.x + artWindow.width > 1 || artWindow.y + artWindow.height > 1) {
             issue('cardGeometry/artWindow', 'The artwork window must fit within the normalized card bounds.');
+          }
+          if (frame.artwork?.transition) {
+            if (document.version !== '0.5') issue('artwork/transition', 'Standard-card OUT + CROP requires document version 0.5.');
+            const [start, end] = frame.artwork.transition.outRange ?? [0.18, 0.73];
+            if (start >= end) issue('artwork/transition/outRange', 'OUT + CROP range start must be less than its end.');
           }
         }
         if (frame.type !== 'background' && flow !== 'normal' && !frame.position) issue('position', 'Overlay and overflow Frames require a position.');

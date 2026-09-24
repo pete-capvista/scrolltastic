@@ -2455,8 +2455,9 @@ The local host demonstrates `/s/<story-id>` and supplies a package base
 URL. It is not a production account or publishing implementation.
 Authentication, hosted persistence and the creator editor follow later.
 Masks are added by contract 0.3 in section 64. Static standard Cards are
-added by contract 0.4 in section 65. Card-to-art transitions, Beats and
-further GSAP animation types are subsequent slices.
+added by contract 0.4 in section 65. The first Card-to-art transition is
+added by contract 0.5 in section 66. FIT transitions, Beats and further
+GSAP animation types are subsequent slices.
 
 The implementation plan and remaining language decisions are recorded
 in [the first-slice plan](docs/first-renderer-slice.md). Proposed details
@@ -2518,9 +2519,9 @@ Platform references: [Vite on Vercel](https://vercel.com/docs/frameworks/fronten
 
 The first executable contract is `src/schema/story.schema.json` (JSON
 Schema draft-07). Version 0.1 documents declare one `body` with UUID v4
-`id`, nonempty `title`, and `containers`; sections 63–65 define additive
-version 0.2 scroll reveals, version 0.3 Mask Frames and version 0.4 static
-standard Card Frames. Generated
+`id`, nonempty `title`, and `containers`; sections 63–66 define additive
+version 0.2 scroll reveals, version 0.3 Mask Frames, version 0.4 static
+standard Card Frames and version 0.5 OUT + CROP. Generated
 TypeScript comes from that schema.
 The parser additionally checks cross-document
 IDs and layout combinations; it never coerces values or strips unknown
@@ -2565,12 +2566,13 @@ not a claim that every v4 feature is implemented.
   External URLs, traversal, query strings and encoded paths are rejected.
   Packaged SVG fixture artwork is original; this does not define a future
   upload sanitization policy.
-- Unknown fields and unsupported features (including Card transitions,
+- Unknown fields and unsupported features (including FIT/BOTH Card transitions,
   full-art Cards, Beats,
   animation in version 0.1, bleed and legacy `panels`) fail with a diagnostic.
   Version 0.2 adds only the reveal described in section 63; version 0.3
   adds only Masks described in section 64; version 0.4 adds static standard
-  Cards described in section 65. A legacy
+  Cards described in section 65; version 0.5 adds OUT + CROP described in
+  section 66. A legacy
   `panels` document must migrate to `flow` before rendering.
 
 The Body title is rendered once as the story heading. Meaningful Frames
@@ -2658,7 +2660,7 @@ omitted and the authored shaped viewport remains visible. Mask takeover is
 therefore the pull-focus end state; separate base-scene fade, blur, source
 push and timing controls are deferred.
 
-Mask Frames require version 0.3 and overlay flow. A pull-focus range with
+Mask Frames require version 0.3 or later and overlay flow. A pull-focus range with
 equal or reversed endpoints is invalid. The fixture demonstrates a polygon
 opening over a background scene and expanding to a full-Panel view.
 
@@ -2679,7 +2681,43 @@ use the shared Frame positioning contract. Cards preserve authored reading
 order and expose the full image through alternative text.
 
 Only `cardType: "standard"` is supported in 0.4. Full-art Cards, separate
-artwork sources, presentation transforms, overlap, and OUT/IN/BOTH card-to-art
-transitions remain unsupported and fail validation. A Card Frame requires
-document version 0.4. The fixture uses three complete card-front assets and
-records the approximate artwork window for each.
+artwork sources, presentation transforms, overlap, and card-to-art transitions
+remain unsupported in 0.4. A Card Frame requires document version 0.4 or
+later. The fixture uses three complete card-front assets and records the
+approximate artwork window for each.
+
+# 66. Standard Card OUT + CROP Slice 0.5
+
+Version 0.5 adds the first reversible standard Card transition. It keeps the
+physical card front and its artwork as separate visual layers, using the
+Frame's `cardGeometry.artWindow` to reveal the art already present in the
+card image; a separate artwork asset is not required. The physical card fades
+while a clipped copy of the full image grows from the artwork window to the
+Panel bounds and scales/crops to cover the Panel. Optional normalized `focus`
+coordinates select the point of the art aligned toward the Panel center;
+focus defaults to `{ "x": 0.5, "y": 0.5 }`.
+
+The only supported transition declaration is:
+
+```json
+{
+  "artwork": {
+    "transition": {
+      "direction": "out",
+      "presentation": "crop",
+      "outRange": [0.18, 0.73],
+      "focus": { "x": 0.5, "y": 0.5 }
+    }
+  }
+}
+```
+
+`outRange` is optional, normalized to Panel entry/exit progress, defaults to
+`[0.18, 0.73]`, and must satisfy `0 <= start < end <= 1`. The card chrome
+fades during the early part of that same range. One scrubbed ScrollTrigger
+maps the Panel's clamped entry-to-exit interval to a linear timeline. The
+transition does not pin or change Panel height; scrolling backward restores
+the original card. The expanding crop stays inside the Panel transition
+viewport. With reduced motion the transition layer is not attached and the
+static, accessible full Card Frame remains visible. Other directions and
+FIT/BOTH presentations fail validation until a later language version.

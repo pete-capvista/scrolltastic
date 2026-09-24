@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "StoryDocument",
-  "description": "Scrolltastic renderer contract 0.1 through 0.4. Unsupported capabilities are rejected.",
+  "description": "Scrolltastic renderer contract 0.1 through 0.5. Unsupported capabilities are rejected.",
   "type": "object",
   "properties": {
     "version": {
@@ -10,9 +10,10 @@
         "0.1",
         "0.2",
         "0.3",
-        "0.4"
+        "0.4",
+        "0.5"
       ],
-      "description": "Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Card Frames."
+      "description": "Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds standard-card OUT + CROP."
     },
     "body": {
       "$ref": "#/definitions/Body"
@@ -743,6 +744,37 @@
             }
           },
           "required": ["artWindow"],
+          "additionalProperties": false
+        },
+        "artwork": {
+          "type": "object",
+          "properties": {
+            "transition": {
+              "type": "object",
+              "properties": {
+                "direction": { "type": "string", "const": "out" },
+                "presentation": { "type": "string", "const": "crop" },
+                "outRange": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": { "type": "number", "minimum": 0, "maximum": 1 }
+                },
+                "focus": {
+                  "type": "object",
+                  "properties": {
+                    "x": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "y": { "type": "number", "minimum": 0, "maximum": 1 }
+                  },
+                  "required": ["x", "y"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["direction", "presentation"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["transition"],
           "additionalProperties": false
         }
       },

@@ -1,10 +1,10 @@
 # First renderer slice
 
-Status: static renderer, scroll reveals, Mask Frames, pull-focus and static standard Cards are implemented through contract 0.4.
+Status: static renderer, scroll reveals, Mask Frames, pull-focus, static standard Cards and OUT + CROP are implemented through contract 0.5.
 
 The canonical language and hosting contract are in
 [the design specification](../scrolltastic_design_spec_v4.md), especially
-sections 29–40 and 55–65. This document records the implemented renderer
+sections 29–40 and 55–66. This document records the implemented renderer
 boundaries and the capabilities deferred to subsequent slices.
 
 ## Agreed scope
@@ -148,14 +148,14 @@ pull-focus transition. Its schema, parser, image rendering and GSAP setup
 are covered by the production build and manual browser inspection.
 Automated test suites were not run for this slice.
 
-The trading-card slice adds contract 0.4 static standard Card Frames. It
-supports full card-front assets and declared normalized artwork-window
-geometry; card-to-art transitions and full-art cards remain deferred. The
-three-card fixture demonstrates the provided Lunora, Dravion and Volgarr
-assets in authored order.
+The trading-card slice adds contract 0.4 static standard Card Frames and
+contract 0.5 reversible OUT + CROP transitions. It uses complete card-front
+assets and normalized artwork-window geometry; FIT/BOTH transitions and
+full-art Cards remain deferred. The three-card fixture demonstrates the
+provided Lunora, Dravion and Volgarr assets in authored order.
 
-Later slices add Standard Card transitions, Beat resolution and
-semantic Advance/Reverse before Flip recognition.
+Later slices add OUT + FIT, IN + FIT and BOTH + FIT Card transitions, Beat
+resolution and semantic Advance/Reverse before Flip recognition.
 
 ## Verification results
 

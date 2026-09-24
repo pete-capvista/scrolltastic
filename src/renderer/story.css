@@ -21,6 +21,9 @@
 .frame-slot--card { width: min(86%, 32rem); margin-inline: auto; }
 .frame-content--card { position: relative; overflow: hidden; border-radius: .9rem; filter: drop-shadow(0 1rem 1.6rem rgb(0 0 0 / 24%)); }
 .frame-content--card img { position: absolute; inset: 0; }
+.panel-card-transitions { position: absolute; inset: 0; overflow: clip; pointer-events: none; }
+.card-art-mask { position: absolute; overflow: hidden; opacity: 0; visibility: hidden; }
+.card-art-source { position: absolute; max-width: none; object-fit: fill; }
 .frame-content--narrative, .frame-content--dialogue { padding: 1.2rem 1.35rem; font-size: clamp(1rem, 3.9vw, 1.3rem); line-height: 1.5; overflow-wrap: anywhere; }
 .frame-content p { margin: 0; white-space: pre-wrap; }
 .frame-content--narrative { color: #fffdf5; background: #162d32; }

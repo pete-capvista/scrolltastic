@@ -1,5 +1,5 @@
 {
-  "version": "0.4",
+  "version": "0.5",
   "body": {
     "id": "c6c6bfa1-145e-4d68-a2fd-cc94107b46ea",
     "title": "Guardians of the First Light",
@@ -16,8 +16,7 @@
               {
                 "type": "narrative",
                 "id": "lunora-caption",
-                "text": "Moonlight marks the first path through the dark.",
-                "scrollAnimation": { "type": "reveal" }
+                "text": "Moonlight marks the first path through the dark."
               },
               {
                 "type": "card",
@@ -28,6 +27,14 @@
                 "aspectRatio": 0.704878,
                 "cardGeometry": {
                   "artWindow": { "x": 0.076, "y": 0.094, "width": 0.846, "height": 0.37 }
+                },
+                "artwork": {
+                  "transition": {
+                    "direction": "out",
+                    "presentation": "crop",
+                    "outRange": [0.18, 0.73],
+                    "focus": { "x": 0.5, "y": 0.48 }
+                  }
                 }
               }
             ]
@@ -41,8 +48,7 @@
               {
                 "type": "narrative",
                 "id": "dravion-caption",
-                "text": "The current carries that light into the valleys.",
-                "scrollAnimation": { "type": "reveal" }
+                "text": "The current carries that light into the valleys."
               },
               {
                 "type": "card",
@@ -53,6 +59,14 @@
                 "aspectRatio": 0.705379,
                 "cardGeometry": {
                   "artWindow": { "x": 0.076, "y": 0.094, "width": 0.849, "height": 0.372 }
+                },
+                "artwork": {
+                  "transition": {
+                    "direction": "out",
+                    "presentation": "crop",
+                    "outRange": [0.18, 0.73],
+                    "focus": { "x": 0.5, "y": 0.5 }
+                  }
                 }
               }
             ]
@@ -66,8 +80,7 @@
               {
                 "type": "narrative",
                 "id": "volgarr-caption",
-                "text": "Far below, the sleeping fire answers.",
-                "scrollAnimation": { "type": "reveal" }
+                "text": "Far below, the sleeping fire answers."
               },
               {
                 "type": "card",
@@ -78,6 +91,14 @@
                 "aspectRatio": 0.709046,
                 "cardGeometry": {
                   "artWindow": { "x": 0.076, "y": 0.095, "width": 0.848, "height": 0.37 }
+                },
+                "artwork": {
+                  "transition": {
+                    "direction": "out",
+                    "presentation": "crop",
+                    "outRange": [0.18, 0.73],
+                    "focus": { "x": 0.5, "y": 0.52 }
+                  }
                 }
               }
             ]

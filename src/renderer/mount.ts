@@ -2,13 +2,14 @@ import { parseStory } from '../parser/parse';
 import { renderFrame } from '../frames/render';
 import { applyPanelHeight } from '../layout/position';
 import { watchLayout } from '../layout/lifecycle';
-import type { MaskShape, RevealAnimation } from '../model/story.generated';
+import type { CardFrame, MaskShape, RevealAnimation } from '../model/story.generated';
 import './story.css';
 
 export interface MountOptions { assetBaseUrl: string; onLayout?: () => void }
 export type ScrollAnimationTarget =
   | { kind: 'reveal'; panel: HTMLElement; content: HTMLElement; config: RevealAnimation }
-  | { kind: 'pull-focus'; panel: HTMLElement; placement: HTMLElement; content: HTMLElement; shape: MaskShape; range: [number, number] };
+  | { kind: 'pull-focus'; panel: HTMLElement; placement: HTMLElement; content: HTMLElement; shape: MaskShape; range: [number, number] }
+  | { kind: 'card-out-crop'; panel: HTMLElement; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: CardFrame['cardGeometry']['artWindow']; range: [number, number]; focus: { x: number; y: number } };
 export interface StoryHandle {
   ready: Promise<void>;
   elements: ReadonlyMap<string, HTMLElement>;
@@ -50,6 +51,7 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
       panel.dataset.heightMode = item.height.mode;
       elements.set(item.id, panel);
       applyPanelHeight(panel, item.height);
+      let cardTransitionLayer: HTMLElement | undefined;
       for (const frame of item.frames) {
         const slot = renderFrame(frame, options.assetBaseUrl);
         panel.append(slot);
@@ -62,7 +64,31 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
           const placement = slot.querySelector<HTMLElement>('.frame-placement');
           if (content && placement) animations.push({ kind: 'pull-focus', panel, placement, content, shape: frame.shape, range: frame.transition.range ?? [0.2, 0.65] });
         }
+        if (frame.type === 'card' && frame.artwork?.transition) {
+          const front = slot.querySelector<HTMLImageElement>('.frame-content--card img');
+          const mask = slot.querySelector<HTMLElement>('.card-art-mask');
+          const source = mask?.querySelector<HTMLImageElement>('.card-art-source');
+          if (front && mask && source) {
+            if (!cardTransitionLayer) {
+              cardTransitionLayer = document.createElement('div');
+              cardTransitionLayer.className = 'panel-card-transitions';
+              cardTransitionLayer.setAttribute('aria-hidden', 'true');
+            }
+            mask.remove();
+            cardTransitionLayer.append(mask);
+            animations.push({
+              kind: 'card-out-crop', panel, front, mask, source,
+              artWindow: frame.cardGeometry.artWindow,
+              range: frame.artwork.transition.outRange ?? [0.18, 0.73],
+              focus: frame.artwork.transition.focus ?? { x: 0.5, y: 0.5 },
+            });
+          }
+        }
         if (frame.id) elements.set(frame.id, slot);
+      }
+      if (cardTransitionLayer) {
+        cardTransitionLayer.style.zIndex = String(item.frames.find(frame => frame.type === 'card' && frame.artwork?.transition)?.position?.z ?? 15);
+        panel.append(cardTransitionLayer);
       }
       section.append(panel);
     }

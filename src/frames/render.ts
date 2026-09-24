@@ -50,6 +50,18 @@ export function renderFrame(frame: NormalizedFrame, assetBaseUrl: string): HTMLE
     content.dataset.artWindowHeight = String(frame.cardGeometry.artWindow.height);
     slot.classList.add('frame-slot--card');
     content.append(img);
+    if (frame.artwork?.transition) {
+      const mask = document.createElement('div');
+      mask.className = 'card-art-mask';
+      const source = document.createElement('img');
+      source.className = 'card-art-source';
+      source.src = resolveAsset(frame.asset, assetBaseUrl);
+      source.alt = '';
+      source.decoding = 'async';
+      source.loading = 'eager';
+      mask.append(source);
+      slot.append(mask);
+    }
   } else {
     const text = document.createElement('p');
     text.textContent = frame.text;
