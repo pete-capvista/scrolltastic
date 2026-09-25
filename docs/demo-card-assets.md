@@ -1,5 +1,10 @@
 # Trading-card demo assets
 
+> Historical implementation notes. All current packages use Story Language V5;
+> see [the executable contract](../scrolltastic_story_language_v5.md#47-executable-v5-contract)
+> and [current README](../README.md) for authoring and verification.
+
+
 The third demo package is reserved at:
 
 `public/stories/c6c6bfa1-145e-4d68-a2fd-cc94107b46ea/`

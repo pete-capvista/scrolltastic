@@ -4,7 +4,7 @@ import { parseStory, StoryValidationError } from '../src/parser/parse';
 import { resolveAsset } from '../src/assets/resolve';
 
 function minimal() {
-  return { version: '0.1', body: { id: '550e8400-e29b-41d4-a716-446655440000', title: 'Example', containers: [{ type: 'container', id: 'c1', flow: [{ type: 'panel', id: 'p1', frames: [{ type: 'narrative', text: 'Hello' }] }] }] } };
+  return { storyLanguage: '5', id: '550e8400-e29b-41d4-a716-446655440000', title: 'Example', body: { containers: [{ type: 'container', id: 'c1', flow: [{ type: 'panel', id: 'p1', frames: [{ type: 'narrative', text: 'Hello' }] }] }] } };
 }
 function issues(document: unknown) {
   try { parseStory(document); throw new Error('Expected validation failure'); }
@@ -26,20 +26,20 @@ describe('document contract', () => {
   it('validates every committed story and its asset references', () => {
     for (const id of readdirSync('public/stories')) {
       const story = parseStory(readFileSync(`public/stories/${id}/story.json`, 'utf8'));
-      expect(story.body.id).toBe(id);
+      expect(story.id).toBe(id);
       for (const container of story.body.containers) for (const item of container.flow) {
         if (item.type !== 'panel') continue;
-        for (const frame of item.frames) if ('asset' in frame) expect(readFileSync(`public/stories/${id}/${frame.asset}`).length).toBeGreaterThan(0);
+        for (const frame of item.frames) if ('src' in frame) expect(readFileSync(`public/stories/${id}/${frame.src}`).length).toBeGreaterThan(0);
       }
     }
   });
   it('reports malformed JSON and duplicate IDs at document paths', () => {
     expect(issues('{broken')[0].path).toBe('/');
     const doc = minimal(); doc.body.containers[0].flow[0].id = 'c1';
-    expect(issues(doc)).toContainEqual({ path: '/body/containers/0/flow/0/id', message: 'Duplicate ID: c1.' });
+    expect(issues(doc)).toContainEqual(expect.objectContaining({ path: '/body/containers/0/flow/0/id', message: 'Duplicate ID: c1.' }));
   });
   it('rejects unsupported declarations, versions and legacy panels', () => {
-    expect(() => parseStory({ ...minimal(), version: '99' })).toThrow(StoryValidationError);
+    expect(() => parseStory({ ...minimal(), storyLanguage: '99' })).toThrow(StoryValidationError);
     const doc: any = minimal();
     doc.body.containers[0].panels = doc.body.containers[0].flow;
     delete doc.body.containers[0].flow;
@@ -51,24 +51,22 @@ describe('document contract', () => {
     const bleed: any = minimal(); bleed.body.containers[0].flow[0].frames[0].bleed = { top: true };
     expect(() => parseStory(bleed)).toThrow(StoryValidationError);
   });
-  it('accepts only versioned standard-card IN + FIT declarations', () => {
+  it('accepts standard-card IN + FIT declarations', () => {
     const input: any = minimal();
-    input.version = '0.7';
+
     input.body.containers[0].flow[0].frames = [{
-      type: 'card', cardType: 'standard', asset: 'assets/card.svg', alt: 'Test card', aspectRatio: .7,
+      type: 'card', cardType: 'standard', src: 'assets/card.svg', alt: 'Test card', aspectRatio: .7,
       cardGeometry: { artWindow: { x: .1, y: .1, width: .8, height: .4 } },
       artwork: { transition: { direction: 'in', presentation: 'fit', inRange: [.2, .8] } },
     }];
-    expect(parseStory(input).version).toBe('0.7');
+    expect(parseStory(input).storyLanguage).toBe('5');
     const twoPinned: any = structuredClone(input);
     twoPinned.body.containers[0].flow.push({
       type: 'panel', id: 'second', frames: [structuredClone(twoPinned.body.containers[0].flow[0].frames[0])],
     });
     expect(issues(twoPinned).some(i => i.message.includes('Only one pinned Card transition'))).toBe(true);
     twoPinned.body.containers[0].flow[1].frames[0].artwork.transition.scrollMode = 'flow';
-    expect(parseStory(twoPinned).version).toBe('0.7');
-    const legacy: any = structuredClone(input); legacy.version = '0.6';
-    expect(issues(legacy).some(i => i.message.includes('version 0.7'))).toBe(true);
+    expect(parseStory(twoPinned).storyLanguage).toBe('5');
     const wrongRange: any = structuredClone(input);
     wrongRange.body.containers[0].flow[0].frames[0].artwork.transition.outRange = [.1, .9];
     expect(issues(wrongRange).some(i => i.path.endsWith('/outRange'))).toBe(true);
@@ -76,25 +74,22 @@ describe('document contract', () => {
     crop.body.containers[0].flow[0].frames[0].artwork.transition.presentation = 'crop';
     expect(issues(crop).some(i => i.message.includes('IN + CROP'))).toBe(true);
   });
-  it('validates BOTH + FIT phases, version gates and incompatible options', () => {
+  it('validates BOTH + FIT phases and incompatible options', () => {
     const input: any = minimal();
-    input.version = '0.8';
+
     const transition = { direction: 'both', presentation: 'fit', inRange: [.05, .3], holdRange: [.3, .62], outRange: [.62, .95] };
     input.body.containers[0].flow[0].frames = [{
-      type: 'card', cardType: 'standard', asset: 'assets/card.svg', alt: 'Test card', aspectRatio: .7,
+      type: 'card', cardType: 'standard', src: 'assets/card.svg', alt: 'Test card', aspectRatio: .7,
       cardGeometry: { artWindow: { x: .1, y: .1, width: .8, height: .4 } },
       artwork: { transition },
     }];
-    expect(parseStory(input).version).toBe('0.8');
+    expect(parseStory(input).storyLanguage).toBe('5');
     const change = (patch: object) => {
       const copy = structuredClone(input);
       Object.assign(copy.body.containers[0].flow[0].frames[0].artwork.transition, patch);
       return copy;
     };
-    expect(parseStory(change({ holdRange: [.4, .5] })).version).toBe('0.8');
-    for (const version of ['0.5', '0.6', '0.7']) {
-      expect(issues({ ...input, version }).some(i => i.message.includes('version 0.8'))).toBe(true);
-    }
+    expect(parseStory(change({ holdRange: [.4, .5] })).storyLanguage).toBe('5');
     for (const name of ['inRange', 'holdRange', 'outRange']) {
       for (const range of [[.5, .5], [.8, .2], [-.1, .2], [.2, 1.1], [.2], [.1, .2, .3]]) {
         expect(() => parseStory(change({ [name]: range }))).toThrow(StoryValidationError);
@@ -115,7 +110,7 @@ describe('document contract', () => {
     multiple.body.containers[0].flow.push({ ...structuredClone(multiple.body.containers[0].flow[0]), id: 'second' });
     expect(issues(multiple).some(i => i.message.includes('Only one pinned'))).toBe(true);
     multiple.body.containers[0].flow[1].frames[0].artwork.transition.scrollMode = 'flow';
-    expect(parseStory(multiple).version).toBe('0.8');
+    expect(parseStory(multiple).storyLanguage).toBe('5');
   });
   it('requires height-producing content and positions for overflow', () => {
     const doc: any = minimal();
@@ -125,11 +120,10 @@ describe('document contract', () => {
     expect(errors.some(i => i.path.endsWith('/position'))).toBe(true);
     expect(errors.some(i => i.path.endsWith('/height'))).toBe(true);
   });
-  it('rejects background flow, missing ratio, nonfinite ratios and invalid lengths', () => {
+  it('rejects background flow, nonfinite ratios and invalid lengths', () => {
     for (const frame of [
-      { type: 'background', asset: 'assets/a.svg', flow: 'normal' },
-      { type: 'image', asset: 'assets/a.svg', alt: 'A scene' },
-      { type: 'image', asset: 'assets/a.svg', alt: 'A scene', aspectRatio: Infinity },
+      { type: 'background', src: 'assets/a.svg', flow: 'normal' },
+      { type: 'image', src: 'assets/a.svg', alt: 'A scene', aspectRatio: Infinity },
     ]) {
       const doc: any = minimal(); doc.body.containers[0].flow[0].frames = [frame];
       expect(() => parseStory(doc)).toThrow(StoryValidationError);
@@ -152,7 +146,7 @@ describe('package resolution', () => {
   it.each(['../other/a.svg', 'assets/../a.svg', '/assets/a.svg', 'https://other.test/a.svg', 'assets/%2e%2e/a.svg', 'assets/a.svg?x=1', 'assets\\a.svg'])('rejects escaping or ambiguous reference %s', value => {
     expect(() => resolveAsset(value, base)).toThrow();
   });
-  it.each(['file:///tmp/', 'https://example.test/package', 'https://example.test/package/?x=1'])('rejects invalid base %s', baseUrl => {
+  it.each(['file:///tmp/', 'https://user:secret@example.test/package/', 'https://example.test/package', 'https://example.test/package/?x=1'])('rejects invalid base %s', baseUrl => {
     expect(() => resolveAsset('assets/a.svg', baseUrl)).toThrow();
   });
 });

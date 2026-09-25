@@ -44,10 +44,10 @@ export function createBeatIndex(root: HTMLElement, bindings: readonly BeatBindin
     for (const binding of bindings) {
       const { top, height } = geometry.get(binding.element)!;
       if (binding.kind === 'element') {
-        candidates.push({ id: binding.beat.id, source: 'element', element: binding.element, fallback: false,
+        candidates.push({ id: binding.beat.id, label: binding.beat.label, source: 'element', element: binding.element, fallback: false,
           scrollY: elementCoordinate(top, height, viewportHeight, binding.beat.align, offsets.get(binding.beat.offset ?? '') ?? 0) });
       } else {
-        for (const beat of binding.beats) candidates.push({ id: beat.id, source: 'timeline', element: binding.element,
+        for (const beat of binding.beats) candidates.push({ id: beat.id, label: beat.label, source: 'timeline', element: binding.element,
           progress: beat.progress, fallback: !binding.range,
           scrollY: binding.range ? timelineCoordinate(binding.range, beat.progress) : elementCoordinate(top, height, viewportHeight, 'center') });
       }

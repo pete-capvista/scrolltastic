@@ -1,35 +1,80 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "StoryDocument",
-  "description": "Scrolltastic renderer contract 0.1 through 0.14. Unsupported capabilities are rejected.",
+  "description": "Scrolltastic Story Language 5. Unsupported capabilities are rejected.",
   "type": "object",
   "properties": {
-    "version": {
-      "type": "string",
-      "enum": [
-        "0.1",
-        "0.2",
-        "0.3",
-        "0.4",
-        "0.5",
-        "0.6",
-        "0.7",
-        "0.8",
-        "0.9",
-        "0.10",
-        "0.11",
-        "0.12",
-        "0.13",
-        "0.14"
-      ],
-      "description": "Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT; version 0.7 adds IN + FIT; version 0.8 adds BOTH + FIT; version 0.9 adds Element and Timeline Beats; version 0.10 adds Advance/Reverse with controls. Version 0.11 adds scoped keyboard input. Version 0.12 adds touch Flip input. Version 0.13 adds settled-scroll Beat snapping. Version 0.14 adds tap-to-Advance."
-    },
     "body": {
       "$ref": "#/definitions/Body"
+    },
+    "storyLanguage": {
+      "const": "5",
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "language": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 100
+    },
+    "direction": {
+      "enum": [
+        "ltr",
+        "rtl",
+        "auto"
+      ]
+    },
+    "beats": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/RootBeat"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "maxProperties": 32,
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string",
+            "maxLength": 2000
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        }
+      }
     }
   },
   "required": [
-    "version",
+    "storyLanguage",
+    "id",
+    "title",
     "body"
   ],
   "additionalProperties": false,
@@ -50,6 +95,11 @@
         "offset": {
           "type": "string",
           "pattern": "^(0|-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)(?:px|rem|vw|vh|svh|dvh))$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
         }
       },
       "required": [
@@ -67,6 +117,11 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
         }
       },
       "required": [
@@ -100,7 +155,7 @@
     },
     "Asset": {
       "type": "string",
-      "pattern": "^assets/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.(?:svg|png|jpg|jpeg|webp|avif)$"
+      "pattern": "^(?:assets|cards)/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.(?:svg|png|jpg|jpeg|webp|avif)$"
     },
     "Position": {
       "type": "object",
@@ -153,71 +208,17 @@
     "Height": {
       "oneOf": [
         {
-          "type": "object",
-          "properties": {
-            "mode": {
-              "type": "string",
-              "const": "auto"
-            }
-          },
-          "required": [
-            "mode"
-          ],
-          "additionalProperties": false
+          "type": "string",
+          "enum": [
+            "auto",
+            "content",
+            "viewport"
+          ]
         },
         {
-          "type": "object",
-          "properties": {
-            "mode": {
-              "type": "string",
-              "const": "content"
-            }
-          },
-          "required": [
-            "mode"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "mode": {
-              "type": "string",
-              "const": "viewport"
-            },
-            "value": {
-              "type": "number",
-              "exclusiveMinimum": 0,
-              "maximum": 10
-            }
-          },
-          "required": [
-            "mode"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "mode": {
-              "type": "string",
-              "const": "fixed"
-            },
-            "value": {
-              "$ref": "#/definitions/Length"
-            }
-          },
-          "required": [
-            "mode",
-            "value"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/HeightObject"
         }
-      ],
-      "type": "object",
-      "discriminator": {
-        "propertyName": "mode"
-      }
+      ]
     },
     "BackgroundFrame": {
       "type": "object",
@@ -239,20 +240,38 @@
           "type": "string",
           "const": "background"
         },
-        "asset": {
-          "$ref": "#/definitions/Asset"
-        },
         "fit": {
           "type": "string",
           "enum": [
             "cover",
             "contain"
           ]
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
+        },
+        "src": {
+          "$ref": "#/definitions/Asset"
         }
       },
       "required": [
         "type",
-        "asset"
+        "src"
       ],
       "additionalProperties": false
     },
@@ -280,9 +299,6 @@
           "type": "string",
           "const": "image"
         },
-        "asset": {
-          "$ref": "#/definitions/Asset"
-        },
         "alt": {
           "type": "string"
         },
@@ -297,13 +313,35 @@
             "cover",
             "width"
           ]
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
+        },
+        "src": {
+          "$ref": "#/definitions/Asset"
+        },
+        "decorative": {
+          "type": "boolean"
         }
       },
       "required": [
         "type",
-        "asset",
-        "alt",
-        "aspectRatio"
+        "src"
       ],
       "additionalProperties": false
     },
@@ -342,6 +380,24 @@
         },
         "scrollAnimation": {
           "$ref": "#/definitions/RevealAnimation"
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
         }
       },
       "required": [
@@ -385,6 +441,29 @@
         },
         "scrollAnimation": {
           "$ref": "#/definitions/RevealAnimation"
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
+        },
+        "speaker": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
         }
       },
       "required": [
@@ -441,6 +520,88 @@
             "$ref": "#/definitions/Frame"
           },
           "minItems": 1
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
+        },
+        "background": {
+          "$ref": "#/definitions/Colour"
+        },
+        "padding": {
+          "enum": [
+            "none",
+            "small",
+            "medium",
+            "large"
+          ]
+        },
+        "gap": {
+          "enum": [
+            "none",
+            "small",
+            "medium",
+            "large"
+          ]
+        },
+        "radius": {
+          "enum": [
+            "none",
+            "small",
+            "medium",
+            "large"
+          ]
+        },
+        "border": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color"
+          ],
+          "properties": {
+            "color": {
+              "$ref": "#/definitions/Colour"
+            },
+            "width": {
+              "enum": [
+                "thin",
+                "medium",
+                "thick"
+              ]
+            }
+          }
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "align": {
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "overflow": {
+          "enum": [
+            "visible",
+            "hidden"
+          ]
         }
       },
       "required": [
@@ -511,6 +672,24 @@
             }
           },
           "minItems": 1
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
         }
       },
       "required": [
@@ -580,15 +759,6 @@
           ],
           "additionalProperties": false
         },
-        "id": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1,
-          "pattern": "\\S"
-        },
         "orientation": {
           "type": "string",
           "const": "portrait"
@@ -612,11 +782,30 @@
             "$ref": "#/definitions/Container"
           },
           "minItems": 1
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
+        },
+        "background": {
+          "$ref": "#/definitions/Colour"
         }
       },
       "required": [
-        "id",
-        "title",
         "containers"
       ],
       "additionalProperties": false
@@ -800,9 +989,6 @@
         "content": {
           "type": "object",
           "properties": {
-            "asset": {
-              "$ref": "#/definitions/Asset"
-            },
             "alt": {
               "type": "string"
             },
@@ -832,16 +1018,39 @@
                 "y"
               ],
               "additionalProperties": false
+            },
+            "src": {
+              "$ref": "#/definitions/Asset"
+            },
+            "decorative": {
+              "type": "boolean"
             }
           },
           "required": [
-            "asset",
-            "alt"
+            "src"
           ],
           "additionalProperties": false
         },
         "transition": {
           "$ref": "#/definitions/MaskFocusTransition"
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
         }
       },
       "required": [
@@ -879,9 +1088,6 @@
         "cardType": {
           "type": "string",
           "const": "standard"
-        },
-        "asset": {
-          "$ref": "#/definitions/Asset"
         },
         "alt": {
           "type": "string",
@@ -1078,17 +1284,198 @@
             "transition"
           ],
           "additionalProperties": false
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
+        },
+        "src": {
+          "$ref": "#/definitions/Asset"
+        },
+        "decorative": {
+          "type": "boolean"
         }
       },
       "required": [
         "type",
-        "cardType",
-        "asset",
-        "alt",
-        "aspectRatio",
-        "cardGeometry"
+        "src"
       ],
       "additionalProperties": false
+    },
+    "Typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "font": {
+          "enum": [
+            "story-sans",
+            "story-serif",
+            "comic",
+            "handwritten",
+            "dramatic",
+            "technical"
+          ]
+        },
+        "size": {
+          "enum": [
+            "small",
+            "medium",
+            "large",
+            "x-large"
+          ]
+        },
+        "weight": {
+          "enum": [
+            "normal",
+            "bold"
+          ]
+        },
+        "style": {
+          "enum": [
+            "normal",
+            "italic"
+          ]
+        },
+        "align": {
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "lineHeight": {
+          "enum": [
+            "compact",
+            "normal",
+            "relaxed"
+          ]
+        },
+        "letterSpacing": {
+          "enum": [
+            "normal",
+            "wide"
+          ]
+        }
+      }
+    },
+    "Colour": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "RootBeat": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "align": {
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^(0|-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)(?:px|rem|vw|vh|svh|dvh))$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target": {
+          "$ref": "#/definitions/Id"
+        }
+      },
+      "required": [
+        "id",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "HeightObject": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "auto"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "content"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "viewport"
+            },
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 10
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "fixed"
+            },
+            "value": {
+              "$ref": "#/definitions/Length"
+            }
+          },
+          "required": [
+            "mode",
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "type": "object",
+      "discriminator": {
+        "propertyName": "mode"
+      }
     }
   }
 }

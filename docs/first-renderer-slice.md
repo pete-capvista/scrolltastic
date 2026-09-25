@@ -1,5 +1,10 @@
 # First renderer slice
 
+> Historical implementation notes. All current packages use Story Language V5;
+> see [the executable contract](../scrolltastic_story_language_v5.md#47-executable-v5-contract)
+> and [current README](../README.md) for authoring and verification.
+
+
 Status: static renderer, scroll reveals, Mask Frames, pull-focus, static standard Cards, OUT + CROP, OUT + FIT, IN + FIT and BOTH + FIT, Beat resolution and Advance/Reverse controls are implemented through contract 0.14 (including keyboard, Flip, snapping, and tap-to-Advance).
 
 The canonical language and hosting contract are in

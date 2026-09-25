@@ -1,4 +1,6 @@
-import { parseStory } from '../parser/parse';
+import { validateStory, StoryValidationError, type ValidationDiagnostic } from '../parser/parse';
+import { applyTextEnvironment } from '../typography/apply';
+import { applyPanelPresentation } from '../layout/presentation';
 import { renderFrame } from '../frames/render';
 import { applyPanelHeight } from '../layout/position';
 import { watchLayout } from '../layout/lifecycle';
@@ -7,12 +9,12 @@ import { createBeatIndex } from '../beats/controller';
 import type { BeatBinding, PinBinding, ResolvedBeat, TimelineBeatBinding } from '../beats/model';
 import './story.css';
 
-export interface MountOptions { viewportBottomInset?: () => number; assetBaseUrl: string; onLayout?: () => void; onBeatsChange?: (beats: readonly ResolvedBeat[]) => void }
+export interface MountOptions { onDiagnostics?: (diagnostics: readonly ValidationDiagnostic[]) => void; viewportBottomInset?: () => number; assetBaseUrl: string; onLayout?: () => void; onBeatsChange?: (beats: readonly ResolvedBeat[]) => void }
 export type ScrollAnimationTarget = (
   | { kind: 'reveal'; panel: HTMLElement; content: HTMLElement; config: RevealAnimation }
   | { kind: 'pull-focus'; panel: HTMLElement; placement: HTMLElement; content: HTMLElement; shape: MaskShape; range: [number, number] }
-  | { kind: 'card-out-crop'; panel: HTMLElement; pinElement?: HTMLElement; scrollMode: 'pin' | 'flow'; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: CardFrame['cardGeometry']['artWindow']; range: [number, number]; focus: { x: number; y: number } }
-  | { kind: 'card-fit'; panel: HTMLElement; pinElement?: HTMLElement; scrollMode: 'pin' | 'flow'; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: CardFrame['cardGeometry']['artWindow']; aspectRatio: number; range: [number, number] } & (
+  | { kind: 'card-out-crop'; panel: HTMLElement; pinElement?: HTMLElement; scrollMode: 'pin' | 'flow'; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: NonNullable<CardFrame['cardGeometry']>['artWindow']; range: [number, number]; focus: { x: number; y: number } }
+  | { kind: 'card-fit'; panel: HTMLElement; pinElement?: HTMLElement; scrollMode: 'pin' | 'flow'; front: HTMLImageElement; mask: HTMLElement; source: HTMLImageElement; artWindow: NonNullable<CardFrame['cardGeometry']>['artWindow']; aspectRatio: number; range: [number, number] } & (
     | { direction: 'in' | 'out' }
     | { direction: 'both'; inRange: [number, number]; outRange: [number, number] }
   )) & { beatTimeline?: TimelineBeatBinding; pinBinding?: PinBinding };
@@ -57,22 +59,36 @@ function wrapStoryPrefixThrough(body: HTMLElement, panel: HTMLElement) {
 }
 
 export function mountStory(root: HTMLElement, input: unknown, options: MountOptions): StoryHandle {
-  const story = parseStory(input);
+  const result = validateStory(input);
+  options.onDiagnostics?.(result.diagnostics);
+  if (!result.document) throw new StoryValidationError(result.diagnostics);
+  const story = result.document;
   const elements = new Map<string, HTMLElement>();
   const animations: ScrollAnimationTarget[] = [];
   const beatBindings: BeatBinding[] = [];
   const pins: PinBinding[] = [];
   const body = document.createElement('div');
   body.className = 'story-body';
-  body.dataset.storyId = story.body.id;
-  elements.set(story.body.id, body);
+  body.dataset.storyId = story.id;
+  applyTextEnvironment(body, { language: story.language, direction: story.direction, ...story.body });
+  if (story.body.background) body.style.backgroundColor = story.body.background;
+  elements.set(story.id, body);
   const title = document.createElement('h1');
   title.className = 'story-title';
-  title.textContent = story.body.title;
+  title.textContent = story.title;
   body.append(title);
+  if (story.accessibility?.summary) {
+    const summary = document.createElement('p');
+    summary.className = 'story-summary';
+    summary.textContent = story.accessibility.summary;
+    body.append(summary);
+  }
+  const rootBeats = new Map<string, NonNullable<typeof story.beats>>();
+  for (const beat of story.beats ?? []) rootBeats.set(beat.target, [...(rootBeats.get(beat.target) ?? []), beat]);
   for (const container of story.body.containers) {
     const section = document.createElement('section');
     section.className = 'story-container';
+    applyTextEnvironment(section, container);
     section.dataset.containerId = container.id;
     elements.set(container.id, section);
     for (const item of container.flow) {
@@ -87,10 +103,13 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
       }
       const panel = document.createElement('article');
       panel.className = 'story-panel';
+      applyTextEnvironment(panel, item);
+      applyPanelPresentation(panel, item);
       panel.dataset.panelId = item.id;
       panel.dataset.heightMode = item.height.mode;
       elements.set(item.id, panel);
       if (item.beat) beatBindings.push({ kind: 'element', element: panel, beat: item.beat });
+      for (const beat of rootBeats.get(item.id) ?? []) beatBindings.push({ kind: 'element', element: panel, beat });
       applyPanelHeight(panel, item.height);
       let cardTransitionLayer: HTMLElement | undefined;
       let cardFitTransitionLayer: HTMLElement | undefined;
@@ -99,6 +118,7 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
         panel.append(slot);
         const beatElement = slot.querySelector<HTMLElement>('.frame-placement')!;
         if (frame.beat) beatBindings.push({ kind: 'element', element: beatElement, beat: frame.beat });
+        for (const beat of rootBeats.get(frame.id ?? '') ?? []) beatBindings.push({ kind: 'element', element: beatElement, beat });
         const timelineBeats = frame.type === 'card' ? frame.artwork?.transition.beats : frame.type === 'mask' ? frame.transition?.beats : undefined;
         const beatTimeline: TimelineBeatBinding | undefined = timelineBeats
           ? { kind: 'timeline', element: beatElement, beats: timelineBeats } : undefined;
@@ -131,9 +151,9 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
             if (isFit) {
               animations.push({
                 kind: 'card-fit', beatTimeline, panel, front, mask, source,
-                scrollMode: ['0.6', '0.7', '0.8', '0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(story.version) ? frame.artwork.transition.scrollMode ?? 'pin' : 'flow',
-                artWindow: frame.cardGeometry.artWindow,
-                aspectRatio: frame.aspectRatio,
+                scrollMode: frame.artwork.transition.scrollMode ?? 'pin',
+                artWindow: frame.cardGeometry!.artWindow,
+                aspectRatio: frame.aspectRatio!,
                 ...(frame.artwork.transition.direction === 'both' ? {
                   direction: 'both' as const,
                   inRange: frame.artwork.transition.inRange,
@@ -148,8 +168,8 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
             } else {
               animations.push({
                 kind: 'card-out-crop', beatTimeline, panel, front, mask, source,
-                scrollMode: ['0.6', '0.7', '0.8', '0.9', '0.10', '0.11', '0.12', '0.13', '0.14'].includes(story.version) ? frame.artwork.transition.scrollMode ?? 'pin' : 'flow',
-                artWindow: frame.cardGeometry.artWindow,
+                scrollMode: frame.artwork.transition.scrollMode ?? 'pin',
+                artWindow: frame.cardGeometry!.artWindow,
                 range: frame.artwork.transition.outRange ?? [0.18, 0.73],
                 focus: ('focus' in frame.artwork.transition ? frame.artwork.transition.focus : undefined) ?? { x: 0.5, y: 0.5 },
               });

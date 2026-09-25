@@ -9,7 +9,7 @@ const bar = (page: Page) => page.getByRole('navigation', { name: 'Story navigati
 async function legacyFlip(page: Page) {
   await page.route(`**/stories/${ridge}/story.json`, async route => {
     const response = await route.fetch(); const story = await response.json();
-    story.version = '0.12'; delete story.body.interaction.scroll;
+    delete story.body.interaction.scroll;
     story.body.interaction.advance.inputs = ['controls', 'keyboard', 'flip'];
     await route.fulfill({ response, json: story });
   });
@@ -122,7 +122,7 @@ test('reduced-motion Flip uses the same Beat destinations and honors boundaries'
 test('Flip is reusable on a pinned Card timeline through the input contract', async ({ page }) => {
   await page.route(`**/stories/${cards}/story.json`, async route => {
     const response = await route.fetch(); const story = await response.json();
-    story.version = '0.12'; story.body.interaction.advance.inputs.push('flip');
+    story.body.interaction.advance.inputs.push('flip');
     await route.fulfill({ response, json: story });
   });
   await open(page, cards);

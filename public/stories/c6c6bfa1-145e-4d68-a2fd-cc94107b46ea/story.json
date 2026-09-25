@@ -1,5 +1,8 @@
 {
-  "version": "0.11",
+  "storyLanguage": "5",
+  "id": "c6c6bfa1-145e-4d68-a2fd-cc94107b46ea",
+  "title": "Guardians of the First Light",
+  "language": "en",
   "body": {
     "interaction": {
       "advance": {
@@ -11,8 +14,6 @@
         ]
       }
     },
-    "id": "c6c6bfa1-145e-4d68-a2fd-cc94107b46ea",
-    "title": "Guardians of the First Light",
     "containers": [
       {
         "type": "container",
@@ -38,7 +39,6 @@
                 "type": "card",
                 "id": "lunora-card",
                 "cardType": "standard",
-                "asset": "assets/Lunora.png",
                 "alt": "Lunora trading card: a moonlit foxlike guardian beside a lake. The card shows HP 110, Moonlit Guidance, and Lunar Veil.",
                 "aspectRatio": 0.704878,
                 "cardGeometry": {
@@ -80,7 +80,8 @@
                       }
                     ]
                   }
-                }
+                },
+                "src": "assets/Lunora.png"
               }
             ]
           },
@@ -108,7 +109,6 @@
                   "align": "center"
                 },
                 "cardType": "standard",
-                "asset": "assets/Dravion.png",
                 "alt": "Dravion trading card: a blue dragonlike water guardian above waterfalls. The card shows HP 150, Tidal Surge, and Aqua Dominion.",
                 "aspectRatio": 0.705379,
                 "cardGeometry": {
@@ -129,7 +129,8 @@
                       0.68
                     ]
                   }
-                }
+                },
+                "src": "assets/Dravion.png"
               }
             ]
           },
@@ -153,7 +154,6 @@
                 "type": "card",
                 "id": "volgarr-card",
                 "cardType": "standard",
-                "asset": "assets/Volgarr.png",
                 "alt": "Volgarr trading card: a dark, armored fire guardian before an erupting volcano. The card shows HP 170, Molten Roar, and Eruption Fang.",
                 "aspectRatio": 0.709046,
                 "cardGeometry": {
@@ -163,7 +163,8 @@
                     "width": 0.848,
                     "height": 0.37
                   }
-                }
+                },
+                "src": "assets/Volgarr.png"
               }
             ]
           }

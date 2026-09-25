@@ -1,8 +1,9 @@
 {
-  "version": "0.2",
+  "storyLanguage": "5",
+  "id": "b670153e-79da-4bb4-9d69-1b8efb433287",
+  "title": "Where the tide turns",
+  "language": "en",
   "body": {
-    "id": "b670153e-79da-4bb4-9d69-1b8efb433287",
-    "title": "Where the tide turns",
     "containers": [
       {
         "type": "container",
@@ -18,9 +19,9 @@
               {
                 "id": "coast-image",
                 "type": "image",
-                "asset": "assets/scene.svg",
                 "aspectRatio": 0.8,
-                "alt": "A white lighthouse stands above teal waves under a peach evening sky."
+                "alt": "A white lighthouse stands above teal waves under a peach evening sky.",
+                "src": "assets/scene.svg"
               },
               {
                 "type": "narrative",
@@ -79,7 +80,7 @@
             "frames": [
               {
                 "type": "background",
-                "asset": "assets/scene.svg"
+                "src": "assets/scene.svg"
               },
               {
                 "type": "dialogue",
@@ -101,7 +102,7 @@
             "frames": [
               {
                 "type": "narrative",
-                "text": "We would leave at first light.\n\n\u2014 Where the tide turns"
+                "text": "We would leave at first light.\n\n— Where the tide turns"
               }
             ]
           }

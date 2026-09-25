@@ -1,5 +1,10 @@
 # The light beyond the ridge — extended test fixture
 
+> Historical implementation notes. All current packages use Story Language V5;
+> see [the executable contract](../scrolltastic_story_language_v5.md#47-executable-v5-contract)
+> and [current README](../README.md) for authoring and verification.
+
+
 Open `/s/550e8400-e29b-41d4-a716-446655440000`.
 The contract 0.14 story has 11 Panels and 17 Beats. All illustration assets
 are purpose-built SVGs in the story package; `chamber.svg` and `dawn.svg`

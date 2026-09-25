@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createBeatNavigation, findDestination, findNearestDestination, type Destination, type NavigationState } from '../src/interaction/navigation';
 import { parseStory, StoryValidationError } from '../src/parser/parse';
 
-const fixture = () => ({ version: '0.10', body: {
-  id: '550e8400-e29b-41d4-a716-446655440000', title: 'Navigation',
+const fixture = () => ({ storyLanguage: '5', id: '550e8400-e29b-41d4-a716-446655440000', title: 'Navigation', body: {
   interaction: { advance: { enabled: true, mode: 'beats' } },
   containers: [{ type: 'container', id: 'container', flow: [{ type: 'panel', id: 'panel', beat: { id: 'moment' }, frames: [{ type: 'narrative', text: 'A moment.' }] }] }],
 } });
@@ -18,8 +17,7 @@ describe('interaction declaration', () => {
     const omitted: any = fixture(); delete omitted.body.interaction;
     expect(parseStory(omitted).body.interaction).toBeUndefined();
   });
-  it('rejects older versions, missing fields and unsupported inputs/motion', () => {
-    for (const version of ['0.1', '0.8', '0.9']) expect(() => parseStory({ ...fixture(), version })).toThrow('version 0.10');
+  it('rejects missing fields and unsupported inputs/motion', () => {
     for (const interaction of [
       {}, { advance: {} }, { advance: { enabled: true } }, { advance: { mode: 'beats' } },
       { advance: { enabled: 'yes', mode: 'beats' } }, { advance: { enabled: true, mode: 'pages' } },
@@ -112,37 +110,34 @@ describe('semantic navigation', () => {
   });
 });
 
-it('validates versioned input selection and keeps controls available', () => {
-  const story = { ...fixture(), version: '0.11' };
+it('validates input selection and keeps controls available', () => {
+  const story = { ...fixture(), storyLanguage: '5' };
   for (const inputs of [undefined, ['controls'], ['controls', 'keyboard'], ['keyboard', 'controls']]) {
     const advance = { ...story.body.interaction.advance, ...(inputs ? { inputs } : {}) };
-    expect(parseStory({ ...story, body: { ...story.body, interaction: { advance } } }).version).toBe('0.11');
+    expect(parseStory({ ...story, body: { ...story.body, interaction: { advance } } }).storyLanguage).toBe('5');
   }
-  for (const inputs of [[], ['keyboard'], ['flip', 'controls'], ['controls', 'controls']]) {
+  for (const inputs of [[], ['keyboard'], ['controls', 'controls']]) {
     const advance = { ...story.body.interaction.advance, inputs };
     expect(() => parseStory({ ...story, body: { ...story.body, interaction: { advance } } })).toThrow(StoryValidationError);
   }
-  expect(() => parseStory({ ...fixture(), body: { ...story.body, interaction: { advance: { ...story.body.interaction.advance, inputs: ['controls'] } } } })).toThrow('version 0.11');
 });
 
 
 it('validates opt-in settled scrolling and rejects competing gesture ownership', () => {
-  const document = { ...fixture(), version: '0.13' };
+  const document = { ...fixture(), storyLanguage: '5' };
   for (const snap of ['none', 'beats']) {
-    expect(parseStory({ ...document, body: { ...document.body, interaction: { ...document.body.interaction, scroll: { snap } } } }).version).toBe('0.13');
+    expect(parseStory({ ...document, body: { ...document.body, interaction: { ...document.body.interaction, scroll: { snap } } } }).storyLanguage).toBe('5');
   }
   const withSnap = { ...document, body: { ...document.body, interaction: { ...document.body.interaction, scroll: { snap: 'beats' } } } };
-  expect(() => parseStory({ ...withSnap, version: '0.12' })).toThrow('version 0.13');
   withSnap.body.interaction.advance.enabled = false;
   expect(() => parseStory(withSnap)).toThrow('requires enabled Beat navigation');
   withSnap.body.interaction.advance.enabled = true;
   expect(() => parseStory({ ...withSnap, body: { ...withSnap.body, interaction: { ...withSnap.body.interaction, advance: { ...withSnap.body.interaction.advance, inputs: ['controls', 'flip'] } } } })).toThrow('cannot be combined');
 });
 
-it('accepts tap only in the versioned input contract', () => {
-  const story = { ...fixture(), version: '0.14', body: { ...fixture().body,
+it('accepts tap in the input contract', () => {
+  const story = { ...fixture(), storyLanguage: '5', body: { ...fixture().body,
     interaction: { advance: { enabled: true, mode: 'beats', inputs: ['controls', 'keyboard', 'tap'] }, scroll: { snap: 'none' } },
   } };
   expect(parseStory(story).body.interaction?.advance.inputs).toContain('tap');
-  expect(() => parseStory({ ...story, version: '0.13' })).toThrow('Tap input requires document version 0.14');
 });

@@ -23,16 +23,14 @@ it('leaves taps, slow drags, horizontal gestures, and long travel out of Flip', 
   }
   expect(canClaimFlip(start, { x: 100, y: 352, time: 1200 })).toBe(false);
 });
-it('requires 0.12 and visible controls for Flip, while preserving older input contracts', () => {
+it('requires visible controls and unique supported inputs for Flip', () => {
   const body = {
-    id: '550e8400-e29b-41d4-a716-446655440000', title: 'Flip',
     interaction: { advance: { enabled: true, mode: 'beats', inputs: ['controls', 'keyboard', 'flip'] } },
     containers: [{ type: 'container', id: 'c', flow: [{ type: 'panel', id: 'p', beat: { id: 'b' }, frames: [{ type: 'narrative', text: 'Hello' }] }] }],
   };
-  expect(parseStory({ version: '0.12', body }).body.interaction?.advance.inputs).toContain('flip');
-  expect(() => parseStory({ version: '0.11', body })).toThrow('Flip input requires document version 0.12');
+  expect(parseStory({ storyLanguage: '5', id: '550e8400-e29b-41d4-a716-446655440000', title: 'Flip', body }).body.interaction?.advance.inputs).toContain('flip');
   for (const inputs of [['flip'], ['controls', 'flip', 'flip'], ['controls', 'unknown']]) {
     const copy = structuredClone(body); copy.interaction.advance.inputs = inputs;
-    expect(() => parseStory({ version: '0.12', body: copy })).toThrow(StoryValidationError);
+    expect(() => parseStory({ storyLanguage: '5', id: '550e8400-e29b-41d4-a716-446655440000', title: 'Flip', body: copy })).toThrow(StoryValidationError);
   }
 });

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 
 const cardStory = () => {
   const story = JSON.parse(readFileSync('public/stories/c6c6bfa1-145e-4d68-a2fd-cc94107b46ea/story.json', 'utf8'));
-  story.version = '0.9';
+
   delete story.body.interaction;
   return story;
 };
@@ -18,31 +18,19 @@ describe('Beat language', () => {
       const story = cardStory();
       firstPanel(story).beat.offset = offset;
       const before = structuredClone(story);
-      expect(parseStory(story).version).toBe('0.9');
+      expect(parseStory(story).storyLanguage).toBe('5');
       expect(story).toEqual(before);
     }
     for (const frame of [
-      { type: 'background', asset: 'assets/scene.svg' },
-      { type: 'image', asset: 'assets/scene.svg', aspectRatio: 1, alt: 'Scene' },
+      { type: 'background', src: 'assets/scene.svg' },
+      { type: 'image', src: 'assets/scene.svg', aspectRatio: 1, alt: 'Scene' },
       { type: 'narrative', text: 'Narrative' }, { type: 'dialogue', text: 'Dialogue' },
-      { type: 'mask', content: { asset: 'assets/scene.svg', alt: 'Masked scene' }, shape: { type: 'ellipse' }, position: { anchor: 'center', width: '50%', height: '50%' } },
+      { type: 'mask', content: { src: 'assets/scene.svg', alt: 'Masked scene' }, shape: { type: 'ellipse' }, position: { anchor: 'center', width: '50%', height: '50%' } },
     ]) {
       const story = cardStory();
       firstPanel(story).height = { mode: 'viewport' };
       firstPanel(story).frames = [{ ...frame, beat: { id: 'frame-moment' } }];
       expect(() => parseStory(story)).not.toThrow();
-    }
-  });
-  it('rejects Beats in every earlier version at their document paths', () => {
-    for (const version of ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8']) {
-      const story = cardStory(); story.version = version;
-      try { parseStory(story); throw new Error('Expected validation failure'); }
-      catch (error) {
-        expect(error).toBeInstanceOf(StoryValidationError);
-        const diagnostics = (error as StoryValidationError).diagnostics;
-        expect(diagnostics).toContainEqual({ path: '/body/containers/0/flow/0/beat', message: 'Beats require document version 0.9.' });
-        expect(diagnostics.some(d => d.path.endsWith('/transition/beats') && d.message.includes('version 0.9'))).toBe(true);
-      }
     }
   });
   it('requires globally unique IDs across Elements and timeline moments', () => {
@@ -64,7 +52,7 @@ describe('Beat language', () => {
       expect(() => parseStory(story)).toThrow(StoryValidationError);
     }
   });
-  it('rejects Beats on unsupported owners and preserves earlier documents', () => {
+  it('rejects Beats on unsupported owners', () => {
     for (const owner of ['body', 'container', 'space', 'reveal', 'panel-timeline']) {
       const story = cardStory();
       if (owner === 'body') story.body.beat = { id: 'invalid' };
@@ -74,10 +62,7 @@ describe('Beat language', () => {
       if (owner === 'panel-timeline') firstPanel(story).beats = [{ id: 'invalid', progress: .5 }];
       expect(() => parseStory(story)).toThrow(StoryValidationError);
     }
-    const legacy = cardStory(); legacy.version = '0.8';
-    delete firstPanel(legacy).beat; delete transition(legacy).beats;
-    delete legacy.body.containers[0].flow[2].frames[1].beat;
-    expect(parseStory(legacy).version).toBe('0.8');
+
   });
 });
 

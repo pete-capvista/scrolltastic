@@ -253,10 +253,10 @@ test('reduced-motion keyboard navigation reaches the ending and releases the bou
   await expect(next(page)).toBeFocused();
 });
 
-for (const version of ['0.10', '0.11']) test(`omitted input selection remains controls-only in ${version}`, async ({ page }) => {
+test('omitted input selection remains controls-only', async ({ page }) => {
   await page.route(`**/stories/${ridge}/story.json`, async route => {
     const response = await route.fetch(); const story = await response.json();
-    story.version = version; delete story.body.interaction.advance.inputs; delete story.body.interaction.scroll;
+    delete story.body.interaction.advance.inputs; delete story.body.interaction.scroll;
     await route.fulfill({ response, json: story });
   });
   await open(page);

@@ -17,8 +17,8 @@ function resetCardCrop(target: Extract<ScrollAnimationTarget, { kind: 'card-out-
   const maskHeight = card.height * window.height;
   gsap.set(target.front, { opacity: 1 });
   gsap.set(target.mask, {
-    left: card.left - panel.left + card.width * window.x,
-    top: card.top - panel.top + card.height * window.y,
+    left: card.left - panel.left - target.panel.clientLeft + card.width * window.x,
+    top: card.top - panel.top - target.panel.clientTop + card.height * window.y,
     width: maskWidth,
     height: maskHeight,
     borderRadius: Math.min(maskWidth, maskHeight) * 0.025,
@@ -60,8 +60,10 @@ function fitDimensions(target: Extract<ScrollAnimationTarget, { kind: 'card-fit'
   const sourceWidth = panelWidth / target.artWindow.width;
   const sourceHeight = sourceWidth / target.aspectRatio;
   const panelHeight = sourceHeight * target.artWindow.height;
-  const centerX = cardRect.left - panelRect.left + cardRect.width * (artWindow.x + artWindow.width / 2);
-  const centerY = cardRect.top - panelRect.top + cardRect.height * (artWindow.y + artWindow.height / 2);
+  const style = getComputedStyle(target.panel);
+  const layoutHeight = panelHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+  const centerX = cardRect.left - panelRect.left - target.panel.clientLeft + cardRect.width * (artWindow.x + artWindow.width / 2);
+  const centerY = cardRect.top - panelRect.top - target.panel.clientTop + cardRect.height * (artWindow.y + artWindow.height / 2);
   const sourceLeft = panelWidth / 2 - cardRect.width * (artWindow.x + artWindow.width / 2);
   const sourceTop = panelHeight / 2 - cardRect.height * (artWindow.y + artWindow.height / 2);
   const targetSourceLeft = panelWidth / 2 - sourceWidth * (artWindow.x + artWindow.width / 2);
@@ -72,6 +74,7 @@ function fitDimensions(target: Extract<ScrollAnimationTarget, { kind: 'card-fit'
   const clipRight = (panelWidth - startWindowWidth) / 2;
   return {
     panelHeight,
+    layoutHeight,
     stageLeft: centerX - panelWidth / 2,
     stageTop: centerY - panelHeight / 2,
     stageWidth: panelWidth,
@@ -88,7 +91,9 @@ function fitDimensions(target: Extract<ScrollAnimationTarget, { kind: 'card-fit'
 function naturalPanelHeight(panel: HTMLElement) {
   const previous = panel.style.height;
   panel.style.height = 'auto';
-  const height = Math.max(panel.getBoundingClientRect().height, panel.scrollHeight);
+  // scrollHeight includes positioned overflow Frames, which must not establish
+  // the semantic scene height restored by a FIT transition.
+  const height = panel.getBoundingClientRect().height;
   panel.style.height = previous;
   return height;
 }
@@ -166,7 +171,7 @@ function attachTransitionPin(target: Extract<ScrollAnimationTarget, { kind: 'car
 function resetCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-fit' }>, naturalHeight: number, dimensions: ReturnType<typeof fitDimensions>) {
   const cardRect = target.front.getBoundingClientRect();
   const entering = target.direction !== 'out';
-  target.panel.style.height = `${entering ? dimensions.panelHeight : naturalHeight}px`;
+  target.panel.style.height = `${entering ? dimensions.layoutHeight : naturalHeight}px`;
   gsap.set(target.front, { opacity: entering ? 0 : 1 });
   gsap.set(target.mask, {
     left: dimensions.stageLeft,
@@ -255,7 +260,7 @@ function attachCardFit(target: Extract<ScrollAnimationTarget, { kind: 'card-fit'
     const entering = direction === 'in';
     // Explicit phase endpoints keep the second leg independent of GSAP's
     // cached start values when the reader reverses or geometry is refreshed.
-    const artHeight = () => dimensions.panelHeight;
+    const artHeight = () => dimensions.layoutHeight;
     const cardHeight = () => naturalHeight;
     timeline.fromTo(target.panel, {
       height: entering ? artHeight : cardHeight,

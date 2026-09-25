@@ -150,7 +150,7 @@ test('Escape and route teardown cancel pending or active snapping', async ({ pag
 test('snap resolves a pinned Card timeline Beat from settled native scroll', async ({ page }) => {
   await page.route(`**/stories/${cards}/story.json`, async route => {
     const response = await route.fetch(); const story = await response.json();
-    story.version = '0.13'; story.body.interaction.scroll = { snap: 'beats' };
+    story.body.interaction.scroll = { snap: 'beats' };
     await route.fulfill({ response, json: story });
   });
   await open(page, cards);

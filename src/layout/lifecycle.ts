@@ -23,9 +23,19 @@ export function watchLayout(root: HTMLElement, onLayout: () => void): LayoutLife
   const observer = new ResizeObserver(schedule);
   observer.observe(root);
   for (const element of root.querySelectorAll('.story-panel, .frame-slot--normal')) observer.observe(element);
+  const measureIntrinsic = (img: HTMLImageElement) => {
+    const content = img.parentElement;
+    if (content?.dataset.intrinsic && img.naturalWidth && img.naturalHeight) {
+      content.style.aspectRatio = String(img.naturalWidth / img.naturalHeight);
+    }
+  };
+  for (const img of root.querySelectorAll('img')) if (img.complete) measureIntrinsic(img);
   const markImage = (event: Event) => {
     const img = event.target;
-    if (img instanceof HTMLImageElement) img.dataset.assetState = event.type === 'error' ? 'error' : 'loaded';
+    if (img instanceof HTMLImageElement) {
+      img.dataset.assetState = event.type === 'error' ? 'error' : 'loaded';
+      measureIntrinsic(img);
+    }
     schedule();
   };
   root.addEventListener('load', markImage, true);

@@ -17,6 +17,7 @@ export interface TimelineBeatBinding {
 export type BeatBinding = ElementBeatBinding | TimelineBeatBinding;
 export type ResolvedBeat = Readonly<{
   id: string;
+  label?: string;
   source: 'element' | 'timeline';
   scrollY: number;
   order: number;

@@ -7,7 +7,8 @@ engine.
 
 The canonical product/design specification is:
 
--   `scrolltastic_design_spec_v4.md`
+-   `scrolltastic_story_language_v5.md` (section 47 defines the executable contract;
+    `scrolltastic_design_spec_v4.md` is historical implementation context)
 
 Read that specification before making architectural or schema changes.
 
@@ -549,7 +550,8 @@ the document model is not polluted with library implementation details.
 First:
 
 1.  Read this file.
-2.  Read `scrolltastic_design_spec_v4.md`.
+2.  Read `scrolltastic_story_language_v5.md` (section 47 defines the executable contract;
+    `scrolltastic_design_spec_v4.md` is historical implementation context).
 3.  Inspect the existing repository before proposing new architecture.
 4.  Identify what is implemented versus specification-only.
 5.  Run existing tests/build if available.

@@ -1,5 +1,6 @@
 import { mountStory, type StoryHandle } from '../renderer/mount';
-import { parseStory, StoryValidationError } from '../parser/parse';
+import { StoryValidationError } from '../parser/parse';
+import { loadStoryRoot, resolveStory, storyIdPattern } from './resolve-story';
 import { renderLanding } from './landing';
 import type { ControlsHandle } from '../inputs/controls';
 import './reader.css';
@@ -10,7 +11,6 @@ let animations: { destroy(): void } | undefined;
 let controls: ControlsHandle | undefined;
 let request: AbortController | undefined;
 let revision = 0;
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 function message(title: string, description: string) {
   const box = document.createElement('div');
@@ -46,31 +46,26 @@ async function readRoute() {
     return;
   }
   const match = /^\/s\/([^/]+)\/?$/.exec(path);
-  if (!match || !uuid.test(match[1])) {
+  if (!match || !storyIdPattern.test(match[1])) {
     message('Story not found', 'Check the story link and try again.');
     return;
   }
   const id = match[1];
-  // Local/static package resolver. A publication API will supply a release base later.
-  const assetBaseUrl = new URL(`/stories/${id}/`, location.origin).href;
   message('Opening your story…', 'One moment.');
   root.setAttribute('aria-busy', 'true');
   try {
-    const response = await fetch(new URL('story.json', assetBaseUrl), { signal: request.signal });
-    if (!response.ok) {
-      if (response.status === 404) throw new Error('This story is unavailable. Check the link and try again.');
-      throw new Error('The story could not be loaded. Please try again.');
-    }
-    const document = parseStory(await response.text());
+    const storyRoot = await loadStoryRoot(request.signal);
     if (run !== revision) return;
-    if (document.body.id !== id) throw new Error('The story package does not match this link.');
+    const { document, assetBaseUrl, diagnostics } = await resolveStory(id, storyRoot, location.origin, request.signal);
+    if (run !== revision) return;
+    if (import.meta.env.DEV && diagnostics.length) console.warn('Scrolltastic story diagnostics', diagnostics);
     current = mountStory(root, document, { assetBaseUrl, viewportBottomInset: () => controls?.height ?? 0 });
     await current.ready;
     if (run !== revision) return;
     if (current.animations.length) {
       const { attachStoryAnimations } = await import('../animation/reveals');
       if (run !== revision) return;
-      animations = attachStoryAnimations(current.elements.get(document.body.id)!, current.animations);
+      animations = attachStoryAnimations(current.elements.get(document.id)!, current.animations);
     }
     if (document.body.interaction?.advance.enabled) {
       const { attachBeatControls } = await import('../inputs/controls');
@@ -78,7 +73,7 @@ async function readRoute() {
       controls = attachBeatControls(root, current, document.body.interaction.advance.inputs?.includes('keyboard'), document.body.interaction.advance.inputs?.includes('flip'), document.body.interaction.scroll?.snap === 'beats', document.body.interaction.advance.inputs?.includes('tap'));
       current.refreshBeats();
     }
-    window.document.title = `${document.body.title} · Scrolltastic`;
+    window.document.title = `${document.title} · Scrolltastic`;
     root.dataset.ready = 'true';
   } catch (error) {
     if (run !== revision || (error instanceof DOMException && error.name === 'AbortError')) return;

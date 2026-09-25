@@ -176,7 +176,7 @@ test('mount lifecycle cleans up and plain text is never interpreted as HTML', as
     const { mountStory } = await import(/* @vite-ignore */ moduleUrl);
     const root = document.createElement('div');
     document.body.append(root);
-    const doc = { version: '0.1', body: { id: '550e8400-e29b-41d4-a716-446655440000', title: 'Test', containers: [{ type: 'container', id: 'container', flow: [{ type: 'panel', id: 'panel', frames: [{ type: 'narrative', text: '<img src=x onerror=alert(1)>' }] }] }] } };
+    const doc = { storyLanguage: '5', id: '550e8400-e29b-41d4-a716-446655440000', title: 'Test', body: { containers: [{ type: 'container', id: 'container', flow: [{ type: 'panel', id: 'panel', frames: [{ type: 'narrative', text: '<img src=x onerror=alert(1)>' }] }] }] } };
     let calls = 0;
     const opts = { assetBaseUrl: `${location.origin}/stories/test/`, onLayout: () => { calls++; } };
     const first = mountStory(root, doc, opts);
@@ -208,9 +208,9 @@ test('exact height clips normal artwork while overflow paints across the next Pa
     const root = document.createElement('div');
     root.style.width = '320px';
     document.body.prepend(root);
-    const doc = { version: '0.1', body: { id, title: 'Clipping', containers: [{ type: 'container', id: 'container', flow: [
+    const doc = { storyLanguage: '5', id, title: 'Clipping', body: { containers: [{ type: 'container', id: 'container', flow: [
       { type: 'panel', id: 'first', height: { mode: 'fixed', value: '100px' }, frames: [
-        { type: 'image', id: 'tall', asset: 'assets/scene.svg', alt: 'Tall artwork', aspectRatio: .5 },
+        { type: 'image', id: 'tall', src: 'assets/scene.svg', alt: 'Tall artwork', aspectRatio: .5 },
         { type: 'narrative', id: 'crossing', text: 'Bridge', flow: 'overflow', position: { anchor: 'top-left', y: '80%', width: '60%' } },
       ] },
       { type: 'panel', id: 'second', frames: [{ type: 'narrative', text: 'Following Panel' }] },

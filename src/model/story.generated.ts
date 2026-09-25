@@ -9,7 +9,12 @@ export type Id = string;
  * This interface was referenced by `StoryDocument`'s JSON-Schema
  * via the `definition` "Height".
  */
-export type Height =
+export type Height = ("auto" | "content" | "viewport") | HeightObject;
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "HeightObject".
+ */
+export type HeightObject =
   | {
       mode: "auto";
     }
@@ -46,6 +51,11 @@ export type Offset = string;
 export type Size = string;
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "Colour".
+ */
+export type Colour = string;
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
  * via the `definition` "Asset".
  */
 export type Asset = string;
@@ -63,15 +73,22 @@ export type MaskShape = EllipseMaskShape | RoundedRectMaskShape | PolygonMaskSha
 export type TimelineBeats = [TimelineBeat, ...TimelineBeat[]];
 
 /**
- * Scrolltastic renderer contract 0.1 through 0.14. Unsupported capabilities are rejected.
+ * Scrolltastic Story Language 5. Unsupported capabilities are rejected.
  */
 export interface StoryDocument {
-  /**
-   * Version 0.2 adds scroll reveals; version 0.3 adds shaped Mask Frames and pull-focus; version 0.4 adds static standard Cards; version 0.5 adds OUT + CROP; version 0.6 adds OUT + FIT; version 0.7 adds IN + FIT; version 0.8 adds BOTH + FIT; version 0.9 adds Element and Timeline Beats; version 0.10 adds Advance/Reverse with controls. Version 0.11 adds scoped keyboard input. Version 0.12 adds touch Flip input. Version 0.13 adds settled-scroll Beat snapping. Version 0.14 adds tap-to-Advance.
-   */
-  version:
-    "0.1" | "0.2" | "0.3" | "0.4" | "0.5" | "0.6" | "0.7" | "0.8" | "0.9" | "0.10" | "0.11" | "0.12" | "0.13" | "0.14";
   body: Body;
+  storyLanguage: "5";
+  id: string;
+  title: string;
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  beats?: RootBeat[];
+  metadata?: {
+    [k: string]: string | number | boolean | null;
+  };
+  accessibility?: {
+    summary?: string;
+  };
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -93,8 +110,6 @@ export interface Body {
       snap: "none" | "beats";
     };
   };
-  id: string;
-  title: string;
   orientation?: "portrait";
   motion?: {
     reducedMotion: "respect-system";
@@ -103,6 +118,11 @@ export interface Body {
    * @minItems 1
    */
   containers: [Container, ...Container[]];
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
+  background?: Colour;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -118,6 +138,10 @@ export interface Container {
    * @minItems 1
    */
   flow: [Panel | Space, ...(Panel | Space)[]];
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -132,6 +156,21 @@ export interface Panel {
    * @minItems 1
    */
   frames: [Frame, ...Frame[]];
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
+  background?: Colour;
+  padding?: "none" | "small" | "medium" | "large";
+  gap?: "none" | "small" | "medium" | "large";
+  radius?: "none" | "small" | "medium" | "large";
+  border?: {
+    color: Colour;
+    width?: "thin" | "medium" | "thick";
+  };
+  opacity?: number;
+  align?: "start" | "center" | "end";
+  overflow?: "visible" | "hidden";
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -141,6 +180,7 @@ export interface ElementBeat {
   id: Id;
   align?: "start" | "center" | "end";
   offset?: string;
+  label?: string;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -152,8 +192,12 @@ export interface BackgroundFrame {
   flow?: "overlay";
   position?: Position;
   type: "background";
-  asset: Asset;
   fit?: "cover" | "contain";
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
+  src: Asset;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -169,6 +213,19 @@ export interface Position {
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "Typography".
+ */
+export interface Typography {
+  font?: "story-sans" | "story-serif" | "comic" | "handwritten" | "dramatic" | "technical";
+  size?: "small" | "medium" | "large" | "x-large";
+  weight?: "normal" | "bold";
+  style?: "normal" | "italic";
+  align?: "start" | "center" | "end";
+  lineHeight?: "compact" | "normal" | "relaxed";
+  letterSpacing?: "normal" | "wide";
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
  * via the `definition` "ImageFrame".
  */
 export interface ImageFrame {
@@ -177,10 +234,15 @@ export interface ImageFrame {
   flow?: "normal" | "overlay" | "overflow";
   position?: Position;
   type: "image";
-  asset: Asset;
-  alt: string;
-  aspectRatio: number;
+  alt?: string;
+  aspectRatio?: number;
   fit?: "contain" | "cover" | "width";
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
+  src: Asset;
+  decorative?: boolean;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -195,6 +257,10 @@ export interface NarrativeFrame {
   text: string;
   shape?: "oblong";
   scrollAnimation?: RevealAnimation;
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -223,6 +289,11 @@ export interface DialogueFrame {
   text: string;
   shape?: "fat-circle";
   scrollAnimation?: RevealAnimation;
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
+  speaker?: string;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -236,15 +307,20 @@ export interface MaskFrame {
   type: "mask";
   shape: MaskShape;
   content: {
-    asset: Asset;
-    alt: string;
+    alt?: string;
     fit?: "cover" | "contain";
     focus?: {
       x: number;
       y: number;
     };
+    src: Asset;
+    decorative?: boolean;
   };
   transition?: MaskFocusTransition;
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -291,6 +367,7 @@ export interface MaskFocusTransition {
 export interface TimelineBeat {
   id: Id;
   progress: number;
+  label?: string;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
@@ -302,11 +379,10 @@ export interface CardFrame {
   flow?: "normal" | "overlay" | "overflow";
   position?: Position;
   type: "card";
-  cardType: "standard";
-  asset: Asset;
-  alt: string;
-  aspectRatio: number;
-  cardGeometry: {
+  cardType?: "standard";
+  alt?: string;
+  aspectRatio?: number;
+  cardGeometry?: {
     artWindow: {
       x: number;
       y: number;
@@ -338,6 +414,12 @@ export interface CardFrame {
         }
       | BothFitTransition;
   };
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
+  src: Asset;
+  decorative?: boolean;
 }
 export interface BothFitTransition {
   beats?: TimelineBeats;
@@ -368,4 +450,15 @@ export interface Space {
   type: "space";
   height: Length;
   background?: string;
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "RootBeat".
+ */
+export interface RootBeat {
+  id: Id;
+  align?: "start" | "center" | "end";
+  offset?: string;
+  label?: string;
+  target: Id;
 }

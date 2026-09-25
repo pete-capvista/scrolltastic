@@ -1,0 +1,151 @@
+{
+  "storyLanguage": "5",
+  "id": "22222222-2222-4222-8222-222222222222",
+  "title": "灯りの向こう",
+  "language": "ja",
+  "direction": "ltr",
+  "metadata": {
+    "fixture": "V5 original reference"
+  },
+  "body": {
+    "background": "#fff6df",
+    "typography": {
+      "font": "story-sans",
+      "size": "medium"
+    },
+    "interaction": {
+      "advance": {
+        "enabled": true,
+        "mode": "beats",
+        "inputs": [
+          "controls",
+          "keyboard"
+        ]
+      }
+    },
+    "containers": [
+      {
+        "id": "crossing",
+        "type": "container",
+        "flow": [
+          {
+            "type": "panel",
+            "id": "arrival-panel",
+            "height": "content",
+            "padding": "medium",
+            "gap": "medium",
+            "frames": [
+              {
+                "id": "arrival",
+                "type": "narrative",
+                "text": "夕暮れ、水の向こうに灯りが見えた。"
+              },
+              {
+                "id": "reveal",
+                "type": "image",
+                "src": "assets/lantern.svg",
+                "alt": "青い水の上、小舟のそばで灯りが輝いている。",
+                "aspectRatio": 0.75
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "4rem"
+          },
+          {
+            "type": "panel",
+            "id": "dialogue-panel",
+            "height": "content",
+            "padding": "medium",
+            "radius": "large",
+            "background": "#397078",
+            "frames": [
+              {
+                "id": "dialogue",
+                "type": "dialogue",
+                "speaker": "ミラ",
+                "text": "灯りはまだ消えていない。",
+                "typography": {
+                  "size": "large"
+                }
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "4rem"
+          },
+          {
+            "type": "panel",
+            "id": "card-panel",
+            "height": "content",
+            "padding": "medium",
+            "frames": [
+              {
+                "id": "card",
+                "type": "card",
+                "src": "cards/lantern.svg",
+                "alt": "青い水の上、小舟のそばで灯りが輝いている。"
+              }
+            ]
+          },
+          {
+            "type": "space",
+            "height": "4rem"
+          },
+          {
+            "type": "panel",
+            "id": "departure-panel",
+            "height": "content",
+            "frames": [
+              {
+                "id": "departure",
+                "type": "narrative",
+                "text": "私たちはその灯りを頼りに家へ帰った。"
+              },
+              {
+                "type": "image",
+                "src": "assets/lantern.svg",
+                "aspectRatio": 0.75,
+                "decorative": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "beats": [
+    {
+      "id": "arrival-beat",
+      "target": "arrival",
+      "label": "Arrival",
+      "align": "center"
+    },
+    {
+      "id": "reveal-beat",
+      "target": "reveal",
+      "label": "Reveal",
+      "align": "center"
+    },
+    {
+      "id": "dialogue-beat",
+      "target": "dialogue",
+      "label": "Dialogue",
+      "align": "center"
+    },
+    {
+      "id": "card-beat",
+      "target": "card",
+      "label": "Card",
+      "align": "center"
+    },
+    {
+      "id": "departure-beat",
+      "target": "departure",
+      "label": "Departure",
+      "align": "center"
+    }
+  ]
+}

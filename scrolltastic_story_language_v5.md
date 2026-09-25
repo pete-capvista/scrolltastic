@@ -176,16 +176,11 @@ The principal composition hierarchy is:
 
 ``` text
 Story
- │
- └── Body
-      │
-      ├── Container
-      │    │
-      │    └── Panel
-      │         │
-      │         └── Frame
-      │
-      └── Beats
+ ├── Body
+ │    └── Container
+ │         └── Panel
+ │              └── Frame
+ └── Beats
 ```
 
 Conceptually:
@@ -349,7 +344,7 @@ Example:
 {
   "id": "spear-pillar",
   "type": "container",
-  "panels": []
+  "flow": []
 }
 ```
 
@@ -1892,3 +1887,83 @@ extend this model rather than undermine it.
 
 That principle is the primary test for every future addition to the
 Scrolltastic Story Language.
+
+# 47. Executable V5 contract
+
+This section resolves illustrative ambiguities above for the current renderer.
+It takes precedence over earlier examples and V4's historical 0.x contracts.
+All project-owned documents migrate directly; no legacy parser is retained.
+
+- A story requires `storyLanguage: "5"`, root UUID v4 `id`, nonblank `title`
+  and `body`. Body has no separate ID/title. `/s/<id>` remains the reader route.
+- Containers use `flow`, containing typed Panels and first-class `Space`.
+  `panels` is not accepted. Space retains its existing explicit height semantics.
+- Frame `normal`, `overlay`, `overflow` and shared physical anchors retain their
+  meaning. RTL text does not mirror artwork coordinates. IDs share one namespace.
+- Height accepts `auto`, `content`, `viewport`, or the existing bounded object
+  forms. Default is auto; fixed/viewport are exact heights. Auto/content require
+  normal-flow content. There is no independent `artwork-fit` height mode yet.
+- Media references use `src`, including Mask content. Paths are confined to
+  `assets/` or `cards/` in the package, with existing safe path/extension rules.
+  Background stays a decorative, Panel-filling surface; Image is authored content.
+  `artwork` is descriptive vocabulary, not a separate Frame discriminator.
+- Static Image/Card aspect ratios are optional. Without metadata, images establish
+  natural height when loaded; until then a 1:1 placeholder reserves space. Authors
+  should supply `aspectRatio` to prevent shifts. Failed images retain that reserve.
+  Card transitions require explicit ratio and standard artwork-window geometry.
+  A static Card needs neither geometry nor `cardType`; omitted type means standard.
+  Full-art Cards and full-art transitions remain unsupported.
+- `decorative: true` suppresses media from assistive technology and produces empty
+  alt text. Nonempty alt with decorative true is an error. Missing/blank meaningful
+  alt produces an accessibility warning and an explicit missing-description fallback,
+  never silent decoration. Backgrounds are always decorative. Mask semantics come
+  from their content. Dialogue may declare a nonblank `speaker`; speaker and speech
+  are rendered together as ordinary text in authored order.
+- `language` and `direction` (`ltr`, `rtl`, `auto`) inherit from Story through Body,
+  Container, Panel and Frame, with local overrides. Language tags must be accepted
+  by the platform's BCP 47 locale parser. Text is never interpreted as markup.
+- Typography inherits property by property from Body through Container/Panel/Frame.
+  The initial renderer catalogue is `story-sans`, `story-serif`, `comic`,
+  `handwritten`, `dramatic`, `technical`, using system font stacks with fallbacks.
+  No story-provided font URLs are accepted. Sizes are small/medium/large/x-large;
+  weight normal/bold; style normal/italic; align start/center/end; lineHeight
+  compact/normal/relaxed; letterSpacing normal/wide. Semantic tones remain future.
+- Body/Panel `background` and inherited `color` accept six-digit hex colours.
+  Panel padding/gap/radius accept none/small/medium/large. Border requires a colour
+  and optional thin/medium/thick width. Opacity is 0–1. Align is start/center/end
+  and applies to normal-flow children. Gap does not separate overlay Frames.
+  Panel padding defines its normal-flow content inset; physical overlay coordinates
+  and Card takeover bounds remain relative to the full Panel. FIT height includes
+  padding and border so downstream Panels remain in flow.
+- Panel overflow defaults to hidden for ordinary visuals. `visible` permits ordinary
+  visuals to extend; explicit overflow Frames always retain their escape context.
+  Radius clips ordinary visual content, not overflow Frames. FIT extraction keeps
+  its own moving artwork viewport, preserving the complete art rather than applying
+  a second Panel clip to its anchored stage. Reading order remains
+  authored order using per-Frame clipping, not regrouped semantic layers.
+- Root `beats` declare Element Beats with required `id`/`target`, optional label,
+  align and offset. Targets must be explicit Panel/Frame IDs. Existing embedded
+  Element and Card/Mask Timeline Beats remain supported and can carry labels.
+  Multiple distinct Beats may target the same element. IDs cannot repeat anywhere.
+  Coordinate sorting is authoritative. Ties follow composition traversal: embedded
+  Element Beat, root Beats targeting that element in root-array order, then its
+  Timeline Beats. Root timeline syntax is deferred. No automatic focus movement.
+- Existing bounded reveals, Card phases, pin defaults, one-pinned-Card limit,
+  Timeline Beat fallbacks and all input policies remain. Inputs require controls;
+  snap and Flip cannot compete. Generic motion remains future.
+- Root `accessibility.summary` is optional introductory plain text, rendered once
+  after the title. No other accessibility-default fields are defined yet. `metadata`
+  is non-rendering: at most 32 scalar values, strings at most 2000 characters.
+- Validation errors block rendering. Nonfatal diagnostics distinguish authoring,
+  accessibility and compatibility categories and retain authored JSON paths.
+  Unsupported properties/capabilities are errors, not silently dropped warnings.
+  Narrative-length advice is locale-aware, nonfatal and not a hard word limit.
+- Hosts may configure a story-root HTTP(S) URL independently of the renderer.
+  Documents and assets remain package-relative, restricted to that trusted root's
+  origin and package prefix. Document fetches reject redirects; asset requests use
+  native image loading from the trusted package host. JSON endpoints must
+  return JSON, not an HTML fallback. Story content never supplies the trusted root.
+
+The small V5 reference packages and the existing comic/cinematic packages serve
+as conformance fixtures. Browser checks supplement, but do not replace, the real
+screen-reader and physical mobile benchmark in sections 25 and 41.
