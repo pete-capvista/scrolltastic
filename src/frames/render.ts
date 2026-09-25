@@ -1,10 +1,10 @@
 import type { NormalizedFrame } from '../parser/parse';
-import { resolveAsset } from '../assets/resolve';
+import { resolveAsset, type AssetResolver } from '../assets/resolve';
 import { placeFrame } from '../layout/position';
 import { applyTextEnvironment } from '../typography/apply';
 import { maskClipPath } from './mask-geometry';
 
-export function renderFrame(frame: NormalizedFrame, assetBaseUrl: string): HTMLElement {
+export function renderFrame(frame: NormalizedFrame, assetBaseUrl: string, assetResolver?: AssetResolver): HTMLElement {
   // Each slot stays in authored DOM order; its flow controls layout and clipping.
   const slot = document.createElement('div');
   slot.className = `frame-slot frame-slot--${frame.flow}`;
@@ -18,7 +18,7 @@ export function renderFrame(frame: NormalizedFrame, assetBaseUrl: string): HTMLE
   content.className = `frame-content frame-content--${frame.type}`;
   if (frame.type === 'image' || frame.type === 'background' || frame.type === 'mask') {
     const img = document.createElement('img');
-    img.src = resolveAsset(frame.type === 'mask' ? frame.content.src : frame.src, assetBaseUrl);
+    img.src = (assetResolver ?? (asset => resolveAsset(asset, assetBaseUrl)))(frame.type === 'mask' ? frame.content.src : frame.src);
     const media = frame.type === 'background' ? {} : frame.type === 'mask' ? frame.content : frame;
     describeImage(img, media, frame.type === 'background');
     img.decoding = 'async';
@@ -42,7 +42,7 @@ export function renderFrame(frame: NormalizedFrame, assetBaseUrl: string): HTMLE
     content.append(img);
   } else if (frame.type === 'card') {
     const img = document.createElement('img');
-    img.src = resolveAsset(frame.src, assetBaseUrl);
+    img.src = (assetResolver ?? (asset => resolveAsset(asset, assetBaseUrl)))(frame.src);
     describeImage(img, frame);
     img.decoding = 'async';
     img.loading = frame.flow === 'normal' ? 'lazy' : 'eager';
@@ -62,7 +62,7 @@ export function renderFrame(frame: NormalizedFrame, assetBaseUrl: string): HTMLE
       mask.className = 'card-art-mask';
       const source = document.createElement('img');
       source.className = 'card-art-source';
-      source.src = resolveAsset(frame.src, assetBaseUrl);
+      source.src = (assetResolver ?? (asset => resolveAsset(asset, assetBaseUrl)))(frame.src);
       source.alt = '';
       source.decoding = 'async';
       source.loading = 'eager';

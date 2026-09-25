@@ -1,7 +1,7 @@
 # Scrolltastic for VS Code — extension design
 
-Status: proposed design, 2026-09-25. This document specifies an extension;
-no extension implementation or installation is included.
+Status: MVP implemented, 2026-09-25. The first edit/preview increment is in
+`extensions/vscode/`; validation and autocomplete remain later iterations.
 
 ## Product
 
@@ -32,6 +32,12 @@ normal save, undo, search, formatting and source control behavior. This matches
 VS Code's webview model for custom previews. [Webview API](https://code.visualstudio.com/api/extension-guides/webview)
 
 ## First-release experience
+
+The current implementation includes the commands and live preview described
+below, a generated standalone AJV validator, package-scoped webview asset URLs,
+and VS Code launch configuration. It has unit coverage for safe package paths
+and all committed V5 reference stories. The extension host/webview lifecycle
+still needs verification in the Extension Development Host before distribution.
 
 1. Open a folder containing a story package, or run **Scrolltastic: New Story**.
    The command creates a new UUID folder, `story.json`, `assets/` and `cards/`.

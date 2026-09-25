@@ -1,0 +1,9 @@
+:root { color-scheme: light; background: #fff; }
+html, body { width: 100%; min-height: 100%; margin: 0; background: #fff; }
+body { overflow-x: hidden; }
+#story-root { box-sizing: border-box; width: 100%; min-height: 100svh; }
+#story-root .story-body { min-height: 100svh; }
+#story-root .story-title { font-size: clamp(2rem, 7vw, 3.5rem); }
+.preview-error { box-sizing: border-box; min-height: 100svh; padding: 20vh 1.5rem 3rem; color: #243b3f; font: 1rem/1.6 system-ui, sans-serif; }
+.preview-error h1 { max-width: 14ch; margin: 0 0 1rem; font: 400 clamp(2rem, 7vw, 3.25rem)/1.05 Georgia, serif; }
+img[data-asset-state='error'] { outline: 1px dashed #ad4a35; outline-offset: -2px; }

@@ -1,5 +1,7 @@
 const assetPath = /^(?:assets|cards)\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:svg|png|jpg|jpeg|webp|avif)$/;
 
+export type AssetResolver = (asset: string) => string;
+
 export function resolveAsset(asset: string, baseUrl: string): string {
   if (!assetPath.test(asset)) throw new Error(`Invalid package asset: ${asset}`);
   const base = new URL(baseUrl);
@@ -11,4 +13,12 @@ export function resolveAsset(asset: string, baseUrl: string): string {
     throw new Error('Asset escapes its story package.');
   }
   return resolved.href;
+}
+
+/** Resolve a package reference through a trusted host supplied asset map. */
+export function resolveMappedAsset(asset: string, assets: Readonly<Record<string, string>>): string {
+  if (!assetPath.test(asset)) throw new Error(`Invalid package asset: ${asset}`);
+  const resolved = assets[asset];
+  if (typeof resolved !== 'string' || !resolved) throw new Error(`Package asset is unavailable: ${asset}`);
+  return resolved;
 }

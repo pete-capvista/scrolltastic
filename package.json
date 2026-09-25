@@ -8,8 +8,11 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "generate": "node scripts/generate-types.mjs",
-    "check:generated": "node scripts/generate-types.mjs --check",
+    "generate": "node scripts/generate-types.mjs && node scripts/generate-validator.mjs",
+    "check:generated": "node scripts/generate-types.mjs --check && node scripts/generate-validator.mjs --check",
+    "typecheck:vscode": "tsc --noEmit -p extensions/vscode/tsconfig.json",
+    "build:vscode": "npm run check:generated && npm run typecheck:vscode && vite build --config extensions/vscode/vite.config.mts",
+    "package:vscode": "npm run package --prefix extensions/vscode",
     "typecheck": "tsc --noEmit",
     "build": "npm run check:generated && npm run typecheck && vite build",
     "preview": "vite preview --host 0.0.0.0",

@@ -29,6 +29,18 @@ There is one schema and no version-dispatch or compatibility layer.
 
 ## Author
 
+### VS Code
+
+An initial VS Code extension supports a live preview of V5 `story.json` files.
+Run `npm run build:vscode`, then press F5 and choose **Scrolltastic: New Story**
+or open an existing story and run **Scrolltastic: Open Preview to Side**. Add
+artwork to the package's `assets/` or `cards/` folder with Explorer and reference
+it in the JSON. [Extension instructions](extensions/vscode/README.md) ·
+[design and implementation status](docs/vscode-extension-design.md).
+
+Story-specific Problems diagnostics, JSON schema associations and autocomplete
+are planned for later iterations; the initial extension keeps native JSON editing.
+
 ```json
 {
   "storyLanguage": "5",

@@ -4,12 +4,13 @@ import { applyPanelPresentation } from '../layout/presentation';
 import { renderFrame } from '../frames/render';
 import { applyPanelHeight } from '../layout/position';
 import { watchLayout } from '../layout/lifecycle';
+import type { AssetResolver } from '../assets/resolve';
 import type { CardFrame, MaskShape, RevealAnimation } from '../model/story.generated';
 import { createBeatIndex } from '../beats/controller';
 import type { BeatBinding, PinBinding, ResolvedBeat, TimelineBeatBinding } from '../beats/model';
 import './story.css';
 
-export interface MountOptions { onDiagnostics?: (diagnostics: readonly ValidationDiagnostic[]) => void; viewportBottomInset?: () => number; assetBaseUrl: string; onLayout?: () => void; onBeatsChange?: (beats: readonly ResolvedBeat[]) => void }
+export interface MountOptions { onDiagnostics?: (diagnostics: readonly ValidationDiagnostic[]) => void; viewportBottomInset?: () => number; assetBaseUrl?: string; assetResolver?: AssetResolver; onLayout?: () => void; onBeatsChange?: (beats: readonly ResolvedBeat[]) => void }
 export type ScrollAnimationTarget = (
   | { kind: 'reveal'; panel: HTMLElement; content: HTMLElement; config: RevealAnimation }
   | { kind: 'pull-focus'; panel: HTMLElement; placement: HTMLElement; content: HTMLElement; shape: MaskShape; range: [number, number] }
@@ -114,7 +115,7 @@ export function mountStory(root: HTMLElement, input: unknown, options: MountOpti
       let cardTransitionLayer: HTMLElement | undefined;
       let cardFitTransitionLayer: HTMLElement | undefined;
       for (const frame of item.frames) {
-        const slot = renderFrame(frame, options.assetBaseUrl);
+        const slot = renderFrame(frame, options.assetBaseUrl ?? '', options.assetResolver);
         panel.append(slot);
         const beatElement = slot.querySelector<HTMLElement>('.frame-placement')!;
         if (frame.beat) beatBindings.push({ kind: 'element', element: beatElement, beat: frame.beat });

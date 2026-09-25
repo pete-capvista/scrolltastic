@@ -1,6 +1,6 @@
-import Ajv from 'ajv';
-import schema from '../schema/story.schema.json';
+import validateSchema from './story-validator.generated.js';
 import type { StoryDocument } from '../model/story.generated';
+import type { ValidateFunction } from 'ajv';
 
 export interface Diagnostic { path: string; message: string }
 export class StoryValidationError extends Error {
@@ -11,7 +11,7 @@ export class StoryValidationError extends Error {
 }
 export type { NormalizedStory, NormalizedFrame, NormalizedPanel } from '../model/normalized';
 import type { NormalizedStory, NormalizedFrame, NormalizedContainer } from '../model/normalized';
-const validate = new Ajv({ allErrors: true, strict: true, discriminator: true }).compile<StoryDocument>(schema);
+const validate = validateSchema as ValidateFunction<StoryDocument>;
 
 function parseValidatedStory(input: unknown): NormalizedStory {
   let value = input;
