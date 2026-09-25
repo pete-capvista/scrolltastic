@@ -52,6 +52,8 @@ function parseValidatedStory(input: unknown): NormalizedStory {
     if (interaction.advance.inputs?.includes('flip')) issues.push({ path: '/body/interaction/scroll/snap', message: 'Beat snapping cannot be combined with Flip input.' });
   }
   let pinnedCardTransitionCount = 0;
+  const dialogueLocations = new Map<string, { panelId: string; index: number; path: string }>();
+  const dialogueChains: { sourceId?: string; targetId: string; panelId: string; index: number; path: string }[] = [];
   document.body.containers.forEach((container, ci) => container.flow.forEach((item, pi) => {
     if (item.type !== 'panel') return;
     item.frames.forEach((frame, fi) => {
@@ -149,6 +151,23 @@ function parseValidatedStory(input: unknown): NormalizedStory {
         }
         if (frame.type === 'image' && frame.fit === 'width' && frame.position?.height && frame.position.height !== 'auto') issue('position/height', 'Image fit=width requires automatic height.');
         if (frame.type === 'background' || frame.type === 'mask') return { ...frame, flow: 'overlay' };
+        if (frame.type === 'narrative') return { ...frame, flow, shape: frame.shape ?? 'rectangle' };
+        if (frame.type === 'sound-effect') return { ...frame, flow, style: frame.style ?? 'impact' };
+        if (frame.type === 'dialogue') {
+          const dialogueStyle = frame.dialogueStyle ?? 'spoken';
+          const expectedShape = dialogueStyle === 'thought' ? 'cloud' : 'oval';
+          const expectedTail = dialogueStyle === 'thought' ? 'circle-chain' : 'triangle';
+          if (frame.bubble && frame.bubble.shape !== expectedShape) issue('bubble/shape', `${dialogueStyle} Dialogue requires a ${expectedShape} bubble.`);
+          if (frame.tail?.style && frame.tail.style !== expectedTail) issue('tail/style', `${dialogueStyle} Dialogue requires a ${expectedTail} tail.`);
+          if (frame.id) dialogueLocations.set(frame.id, { panelId: item.id, index: fi, path: fp });
+          if (frame.chain) dialogueChains.push({ sourceId: frame.id, targetId: frame.chain.next, panelId: item.id, index: fi, path: fp });
+          return {
+            ...frame, flow, dialogueStyle,
+            bubble: frame.bubble ?? { shape: expectedShape },
+            tail: { enabled: !frame.chain, direction: 'bottom', style: expectedTail, ...frame.tail },
+            chain: frame.chain && { connector: 'bridge', ...frame.chain },
+          };
+        }
         return { ...frame, flow };
       });
       const height = typeof item.height === 'string' ? { mode: item.height } : item.height ?? { mode: 'auto' as const };
@@ -162,6 +181,18 @@ function parseValidatedStory(input: unknown): NormalizedStory {
     checkId(beat.id, `/beats/${index}`);
     if (!targets.has(beat.target)) issues.push({ path: `/beats/${index}/target`, message: 'Beat target must identify a Panel or Frame.' });
   });
+  const predecessors = new Set<string>();
+  for (const chain of dialogueChains) {
+    const target = dialogueLocations.get(chain.targetId);
+    if (!chain.sourceId) issues.push({ path: `${chain.path}/id`, message: 'A chained Dialogue Frame requires an ID.' });
+    if (!target) issues.push({ path: `${chain.path}/chain/next`, message: 'Dialogue chain target must identify a Dialogue Frame.' });
+    else {
+      if (target.panelId !== chain.panelId) issues.push({ path: `${chain.path}/chain/next`, message: 'Dialogue chains must stay within one Panel.' });
+      if (target.index !== chain.index + 1) issues.push({ path: `${chain.path}/chain/next`, message: 'Dialogue chain target must be the next authored Frame.' });
+      if (predecessors.has(chain.targetId)) issues.push({ path: `${chain.path}/chain/next`, message: 'A Dialogue Frame may have only one chain predecessor.' });
+      predecessors.add(chain.targetId);
+    }
+  }
   if (document.body.interaction?.advance.enabled && beatCount === 0) {
     issues.push({ path: '/body/interaction/advance', message: 'Enabled Beat navigation requires at least one authored Beat.' });
   }

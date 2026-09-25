@@ -8,7 +8,10 @@ export function updateNormalClipping(root: HTMLElement) {
     for (const element of panel.querySelectorAll<HTMLElement>(':scope > .frame-slot--normal')) {
       const box = element.getBoundingClientRect();
       const edges = [bounds.top - box.top, box.right - bounds.right, box.bottom - bounds.bottom, bounds.left - box.left];
-      writes.push({ element, clip: panel.dataset.overflow === 'visible' ? 'none' : `inset(${edges.map(edge => `${radius === '0px' ? Math.max(0, edge) : edge}px`).join(' ')} round ${radius})` });
+      // Text adornments such as Dialogue tails and chain connectors may leave
+      // their own Frame while remaining clipped to the enclosing Panel.
+      const allowsAdornment = element.classList.contains('frame-slot--text');
+      writes.push({ element, clip: panel.dataset.overflow === 'visible' ? 'none' : `inset(${edges.map(edge => `${radius === '0px' && !allowsAdornment ? Math.max(0, edge) : edge}px`).join(' ')} round ${radius})` });
     }
   }
   for (const { element, clip } of writes) {

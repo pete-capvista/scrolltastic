@@ -4,6 +4,7 @@ const english = '11111111-1111-4111-8111-111111111111';
 const japanese = '22222222-2222-4222-8222-222222222222';
 const arabic = '33333333-3333-4333-8333-333333333333';
 const cards = 'c6c6bfa1-145e-4d68-a2fd-cc94107b46ea';
+const voices = '77777777-7777-4777-8777-777777777777';
 
 for (const [id, language, direction, speech] of [
   [english, 'en', 'ltr', 'Mira: The lantern is still burning.'],
@@ -55,6 +56,31 @@ test('typography inherits per property and local language overrides do not mirro
   });
   expect(style).toMatchObject({ size: '16px', weight: '700', style: 'italic', align: 'end', leading: '28.8px' });
   expect(style.family).toContain('monospace');
+});
+
+test('Narrative shapes, Dialogue styles and Sound Effects retain semantic text', async ({ page }) => {
+  await page.goto(`/s/${voices}`);
+  await expect(page.locator('#app')).toHaveAttribute('data-ready', 'true');
+  await expect(page.locator('[data-frame-id="urgent-narrative"] .frame-content')).toHaveAttribute('data-shape', 'parallelogram');
+  await expect(page.locator('[data-frame-id="torn-narrative"] .frame-content')).toHaveAttribute('data-shape', 'torn-ribbon');
+  const first = page.locator('[data-frame-id="dialogue-one"]');
+  await expect(first).toHaveAttribute('data-chain-connector', 'bridge');
+  await expect(first.locator('.frame-content')).not.toHaveAttribute('data-tail-style');
+  const connector = await first.locator('.frame-placement').evaluate(element => {
+    const style = getComputedStyle(element, '::after');
+    return { display: style.display, height: parseFloat(style.height) };
+  });
+  expect(connector.display).toBe('block');
+  expect(connector.height).toBeGreaterThan(0);
+  const thought = page.locator('[data-frame-id="thought"] .frame-content');
+  await expect(thought).toHaveAttribute('data-dialogue-style', 'thought');
+  await expect(thought).toHaveAttribute('data-shape', 'cloud');
+  await expect(thought).toHaveAttribute('data-tail-style', 'circle-chain');
+  expect(await thought.evaluate(element => getComputedStyle(element, '::after').display)).toBe('block');
+  await expect(page.locator('[data-frame-id="impact"] .frame-content')).toHaveAttribute('data-sound-style', 'burst');
+  const snapshot = await page.locator('.story-body').ariaSnapshot();
+  for (const text of ['The lake had fallen silent.', "Mira: I've seen this place before.", 'Mira: But something is different now.', 'CRASH!', 'WHOOSH!']) expect(snapshot).toContain(text);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('root Beats bind to positioned geometry, retain labels and follow layout changes', async ({ page }) => {

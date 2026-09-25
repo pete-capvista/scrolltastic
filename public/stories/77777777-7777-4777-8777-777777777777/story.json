@@ -1,0 +1,48 @@
+{
+  "storyLanguage": "5",
+  "id": "77777777-7777-4777-8777-777777777777",
+  "title": "Voices in the storm",
+  "language": "en",
+  "body": {
+    "typography": { "font": "story-sans", "size": "medium" },
+    "containers": [{
+      "type": "container",
+      "id": "text-showcase",
+      "flow": [{
+        "type": "panel",
+        "id": "voices",
+        "height": "content",
+        "padding": "medium",
+        "gap": "large",
+        "frames": [
+          { "type": "narrative", "id": "plain-narrative", "shape": "rectangle", "text": "The lake had fallen silent." },
+          { "type": "narrative", "id": "urgent-narrative", "shape": "parallelogram", "text": "Then the warning crossed the water." },
+          { "type": "narrative", "id": "torn-narrative", "shape": "torn-ribbon", "text": "DO NOT FOLLOW THE LIGHTS" },
+          {
+            "type": "dialogue",
+            "id": "dialogue-one",
+            "speaker": "Mira",
+            "text": "I've seen this place before.",
+            "chain": { "next": "dialogue-two", "connector": "bridge" }
+          },
+          {
+            "type": "dialogue",
+            "id": "dialogue-two",
+            "speaker": "Mira",
+            "text": "But something is different now.",
+            "tail": { "direction": "bottom-right" }
+          },
+          {
+            "type": "dialogue",
+            "id": "thought",
+            "speaker": "Mira",
+            "dialogueStyle": "thought",
+            "text": "Where did everyone go?"
+          },
+          { "type": "sound-effect", "id": "impact", "style": "burst", "text": "CRASH!" },
+          { "type": "sound-effect", "id": "movement", "style": "motion", "text": "WHOOSH!" }
+        ]
+      }]
+    }]
+  }
+}

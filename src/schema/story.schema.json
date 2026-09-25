@@ -376,7 +376,11 @@
         },
         "shape": {
           "type": "string",
-          "const": "oblong"
+          "enum": [
+            "rectangle",
+            "parallelogram",
+            "torn-ribbon"
+          ]
         },
         "scrollAnimation": {
           "$ref": "#/definitions/RevealAnimation"
@@ -435,10 +439,6 @@
           "minLength": 1,
           "pattern": "\\S"
         },
-        "shape": {
-          "type": "string",
-          "const": "fat-circle"
-        },
         "scrollAnimation": {
           "$ref": "#/definitions/RevealAnimation"
         },
@@ -464,6 +464,147 @@
           "type": "string",
           "minLength": 1,
           "pattern": "\\S"
+        },
+        "dialogueStyle": {
+          "type": "string",
+          "enum": [
+            "spoken",
+            "thought"
+          ]
+        },
+        "bubble": {
+          "type": "object",
+          "properties": {
+            "shape": {
+              "type": "string",
+              "enum": [
+                "oval",
+                "cloud"
+              ]
+            }
+          },
+          "required": [
+            "shape"
+          ],
+          "additionalProperties": false
+        },
+        "tail": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "top-left",
+                "top",
+                "top-right",
+                "right",
+                "bottom-right",
+                "bottom",
+                "bottom-left",
+                "left"
+              ]
+            },
+            "style": {
+              "type": "string",
+              "enum": [
+                "triangle",
+                "circle-chain"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "chain": {
+          "type": "object",
+          "properties": {
+            "next": {
+              "$ref": "#/definitions/Id"
+            },
+            "connector": {
+              "type": "string",
+              "enum": [
+                "bridge",
+                "line",
+                "bubble-chain",
+                "none"
+              ]
+            }
+          },
+          "required": [
+            "next"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "SoundEffectFrame": {
+      "type": "object",
+      "properties": {
+        "beat": {
+          "$ref": "#/definitions/ElementBeat"
+        },
+        "id": {
+          "$ref": "#/definitions/Id"
+        },
+        "flow": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "overlay",
+            "overflow"
+          ]
+        },
+        "position": {
+          "$ref": "#/definitions/Position"
+        },
+        "type": {
+          "type": "string",
+          "const": "sound-effect"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "style": {
+          "type": "string",
+          "enum": [
+            "burst",
+            "impact",
+            "motion",
+            "rumble",
+            "electronic",
+            "ambient"
+          ]
+        },
+        "scrollAnimation": {
+          "$ref": "#/definitions/RevealAnimation"
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "direction": {
+          "enum": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "typography": {
+          "$ref": "#/definitions/Typography"
+        },
+        "color": {
+          "$ref": "#/definitions/Colour"
         }
       },
       "required": [
@@ -485,6 +626,9 @@
         },
         {
           "$ref": "#/definitions/DialogueFrame"
+        },
+        {
+          "$ref": "#/definitions/SoundEffectFrame"
         },
         {
           "$ref": "#/definitions/MaskFrame"

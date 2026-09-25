@@ -3,6 +3,7 @@ import { resolveAsset, type AssetResolver } from '../assets/resolve';
 import { placeFrame } from '../layout/position';
 import { applyTextEnvironment } from '../typography/apply';
 import { maskClipPath } from './mask-geometry';
+import { renderDialogue, renderNarrative, renderSoundEffect } from './text';
 
 export function renderFrame(frame: NormalizedFrame, assetBaseUrl: string, assetResolver?: AssetResolver): HTMLElement {
   // Each slot stays in authored DOM order; its flow controls layout and clipping.
@@ -10,6 +11,7 @@ export function renderFrame(frame: NormalizedFrame, assetBaseUrl: string, assetR
   slot.className = `frame-slot frame-slot--${frame.flow}`;
   slot.dataset.frameType = frame.type;
   slot.dataset.flow = frame.flow;
+  if (frame.type === 'narrative' || frame.type === 'dialogue' || frame.type === 'sound-effect') slot.classList.add('frame-slot--text');
   applyTextEnvironment(slot, frame);
   if (frame.id) slot.dataset.frameId = frame.id;
   const placement = document.createElement('div');
@@ -69,17 +71,10 @@ export function renderFrame(frame: NormalizedFrame, assetBaseUrl: string, assetR
       mask.append(source);
       slot.append(mask);
     }
-  } else {
-    const text = document.createElement('p');
-    if (frame.type === 'dialogue' && frame.speaker) {
-      const speaker = document.createElement('bdi');
-      speaker.className = 'dialogue-speaker';
-      speaker.textContent = frame.speaker;
-      text.append(speaker, ': ');
-    }
-    text.append(document.createTextNode(frame.text));
-    content.append(text);
-  }
+  } else if (frame.type === 'narrative') renderNarrative(frame, content);
+  else if (frame.type === 'dialogue') renderDialogue(frame, slot, content);
+  else if (frame.type === 'sound-effect') renderSoundEffect(frame, content);
+  else frame satisfies never;
   placement.append(content);
   slot.append(placement);
   placeFrame(slot, placement, frame);

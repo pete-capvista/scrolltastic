@@ -38,7 +38,8 @@ export type Length = string;
  * This interface was referenced by `StoryDocument`'s JSON-Schema
  * via the `definition` "Frame".
  */
-export type Frame = BackgroundFrame | ImageFrame | NarrativeFrame | DialogueFrame | MaskFrame | CardFrame;
+export type Frame =
+  BackgroundFrame | ImageFrame | NarrativeFrame | DialogueFrame | SoundEffectFrame | MaskFrame | CardFrame;
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema
  * via the `definition` "Offset".
@@ -255,7 +256,7 @@ export interface NarrativeFrame {
   position?: Position;
   type: "narrative";
   text: string;
-  shape?: "oblong";
+  shape?: "rectangle" | "parallelogram" | "torn-ribbon";
   scrollAnimation?: RevealAnimation;
   language?: string;
   direction?: "ltr" | "rtl" | "auto";
@@ -287,13 +288,43 @@ export interface DialogueFrame {
   position?: Position;
   type: "dialogue";
   text: string;
-  shape?: "fat-circle";
   scrollAnimation?: RevealAnimation;
   language?: string;
   direction?: "ltr" | "rtl" | "auto";
   typography?: Typography;
   color?: Colour;
   speaker?: string;
+  dialogueStyle?: "spoken" | "thought";
+  bubble?: {
+    shape: "oval" | "cloud";
+  };
+  tail?: {
+    enabled?: boolean;
+    direction?: "top-left" | "top" | "top-right" | "right" | "bottom-right" | "bottom" | "bottom-left" | "left";
+    style?: "triangle" | "circle-chain";
+  };
+  chain?: {
+    next: Id;
+    connector?: "bridge" | "line" | "bubble-chain" | "none";
+  };
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "SoundEffectFrame".
+ */
+export interface SoundEffectFrame {
+  beat?: ElementBeat;
+  id?: Id;
+  flow?: "normal" | "overlay" | "overflow";
+  position?: Position;
+  type: "sound-effect";
+  text: string;
+  style?: "burst" | "impact" | "motion" | "rumble" | "electronic" | "ambient";
+  scrollAnimation?: RevealAnimation;
+  language?: string;
+  direction?: "ltr" | "rtl" | "auto";
+  typography?: Typography;
+  color?: Colour;
 }
 /**
  * This interface was referenced by `StoryDocument`'s JSON-Schema

@@ -137,6 +137,50 @@ describe('document contract', () => {
     const doc = minimal(); doc.body.containers[0].flow[0].frames[0].text = '<script>alert(1)</script>';
     expect(JSON.stringify(parseStory(doc))).toContain('<script>');
   });
+  it('normalizes Narrative, Dialogue and Sound Effect presentation defaults', () => {
+    const doc: any = minimal();
+    doc.body.containers[0].flow[0].frames = [
+      { type: 'narrative', text: 'Narration' },
+      { type: 'dialogue', id: 'spoken', speaker: 'Mira', text: 'Hello', chain: { next: 'reply' } },
+      { type: 'dialogue', id: 'reply', dialogueStyle: 'thought', text: 'Perhaps.' },
+      { type: 'sound-effect', text: 'CRASH!' },
+    ];
+    const panel = parseStory(doc).body.containers[0].flow[0];
+    expect(panel.type).toBe('panel');
+    if (panel.type !== 'panel') throw new Error('Expected Panel');
+    const frames = panel.frames as any[];
+    expect(frames[0]).toMatchObject({ shape: 'rectangle' });
+    expect(frames[1]).toMatchObject({ dialogueStyle: 'spoken', bubble: { shape: 'oval' }, tail: { enabled: false, direction: 'bottom', style: 'triangle' }, chain: { next: 'reply', connector: 'bridge' } });
+    expect(frames[2]).toMatchObject({ dialogueStyle: 'thought', bubble: { shape: 'cloud' }, tail: { enabled: true, direction: 'bottom', style: 'circle-chain' } });
+    expect(frames[3]).toMatchObject({ style: 'impact', flow: 'normal' });
+  });
+  it('rejects obsolete, incoherent and unsafe text presentation declarations', () => {
+    const withFrame = (frame: object) => {
+      const doc: any = minimal(); doc.body.containers[0].flow[0].frames = [frame]; return doc;
+    };
+    for (const frame of [
+      { type: 'dialogue', text: 'Old', shape: 'fat-circle' },
+      { type: 'dialogue', text: 'Mismatch', dialogueStyle: 'thought', bubble: { shape: 'oval' } },
+      { type: 'dialogue', text: 'Mismatch', dialogueStyle: 'spoken', tail: { style: 'circle-chain' } },
+      { type: 'sound-effect', text: 'BOOM', transform: { rotation: -8 } },
+      { type: 'narrative', text: 'Styled', frameStyle: 'tornRibbon' },
+    ]) expect(() => parseStory(withFrame(frame))).toThrow(StoryValidationError);
+  });
+  it('requires Dialogue chains to link adjacent Dialogue Frames in one Panel', () => {
+    const linked = (frames: object[]) => {
+      const doc: any = minimal(); doc.body.containers[0].flow[0].frames = frames; return doc;
+    };
+    expect(() => parseStory(linked([
+      { type: 'dialogue', id: 'one', text: 'One', chain: { next: 'two' } },
+      { type: 'dialogue', id: 'two', text: 'Two' },
+    ]))).not.toThrow();
+    for (const frames of [
+      [{ type: 'dialogue', text: 'No ID', chain: { next: 'two' } }, { type: 'dialogue', id: 'two', text: 'Two' }],
+      [{ type: 'dialogue', id: 'one', text: 'One', chain: { next: 'missing' } }],
+      [{ type: 'dialogue', id: 'one', text: 'One', chain: { next: 'two' } }, { type: 'narrative', text: 'Gap' }, { type: 'dialogue', id: 'two', text: 'Two' }],
+      [{ type: 'dialogue', id: 'one', text: 'One', chain: { next: 'image' } }, { type: 'image', id: 'image', src: 'assets/a.svg', alt: 'A' }],
+    ]) expect(() => parseStory(linked(frames))).toThrow(StoryValidationError);
+  });
 });
 describe('package resolution', () => {
   const base = 'https://example.test/stories/one/releases/two/';

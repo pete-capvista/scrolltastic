@@ -146,15 +146,16 @@ manual screen-reader/physical-device checks that remain necessary.
 
 ## Scope
 
-Supported: Body/Container/Panel/Space, Background/Image/Narrative/Dialogue/Mask/Card,
+Supported: Body/Container/Panel/Space, Background/Image/Narrative/Dialogue/Sound Effect/Mask/Card,
 three Frame flow modes, positioning, semantic height shorthand, Panel presentation,
 curated typography, locale inheritance, speaker attribution, explicit decoration,
+Narrative shapes, spoken/thought bubbles, manual tails, adjacent Dialogue chains,
 root/embedded Beats, bounded reveals, Mask pull-focus, OUT+CROP and OUT/IN/BOTH+FIT,
 and controls/keyboard/Flip/tap/snapping.
 
 One pinned Card transition per story is supported; other transitions use
 `scrollMode: "flow"`. Full-art Cards, bleed, Character/Effects/Title Frames,
-separate artwork sources, generic motion, audio/video, semantic tone presets,
+separate artwork sources, generic motion, automatic tail targeting, audio/video, semantic tone presets,
 responsive overrides and publishing tools remain deferred. Unsupported declarations
 fail validation. The system font catalogue uses available OS fonts and fallbacks;
 it does not download or bundle fonts.

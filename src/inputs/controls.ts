@@ -9,9 +9,9 @@ import { createScrollDriver } from '../animation/assisted-scroll';
 export interface ControlsHandle { readonly height: number; destroy(): void }
 
 /** Reference input adapter. Native buttons also provide Tab/Enter/Space access. */
-export function attachBeatControls(host: HTMLElement, story: StoryHandle, keyboardEnabled = false, flipEnabled = false, snapEnabled = false, tapEnabled = false): ControlsHandle {
+export function attachBeatControls(host: HTMLElement, story: StoryHandle, keyboardEnabled = false, flipEnabled = false, snapEnabled = false, tapEnabled = false, showControls = true): ControlsHandle {
   const controls = document.createElement('nav');
-  controls.className = 'reader-controls';
+  controls.className = `reader-controls${showControls ? '' : ' reader-controls--hidden'}`;
   controls.setAttribute('aria-label', 'Story navigation');
   const previous = document.createElement('button');
   previous.type = 'button'; previous.textContent = 'Previous';

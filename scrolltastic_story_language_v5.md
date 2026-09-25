@@ -507,9 +507,14 @@ Example:
 ``` json
 {
   "type": "narrative",
+  "shape": "rectangle",
   "text": "At Spear Pillar, the air begins to distort around the ancient ruins."
 }
 ```
+
+Narrative `shape` is optional and defaults to `rectangle`. The executable
+catalogue is `rectangle`, `parallelogram`, and `torn-ribbon`. Shape changes
+presentation, not the semantic role or reading order of the text.
 
 Narrative SHOULD normally be concise.
 
@@ -546,6 +551,9 @@ Example:
 {
   "type": "dialogue",
   "speaker": "Cyrus",
+  "dialogueStyle": "spoken",
+  "bubble": { "shape": "oval" },
+  "tail": { "direction": "bottom-right", "style": "triangle" },
   "text": "At last."
 }
 ```
@@ -558,6 +566,48 @@ A screen reader should effectively perceive:
 > Cyrus: At last.
 
 rather than unrelated visual fragments.
+
+Dialogue `dialogueStyle` is `spoken` or `thought` and defaults to `spoken`.
+Spoken Dialogue uses an `oval` bubble and `triangle` tail. Thought Dialogue
+uses a `cloud` bubble and `circle-chain` tail. A tail may be disabled and may
+use a physical eight-way direction. Automatic target-based tail orientation
+is deferred until the language has targetable character geometry.
+
+Separate, adjacent Dialogue Frames in the same Panel may form a chain:
+
+``` json
+{
+  "id": "dialogue-01",
+  "type": "dialogue",
+  "speaker": "Cyrus",
+  "text": "I've seen this place before.",
+  "chain": { "next": "dialogue-02", "connector": "bridge" }
+}
+```
+
+The target must be the next authored Frame and must itself be Dialogue. Initial
+connector styles are `bridge`, `line`, `bubble-chain`, and `none`. Each statement
+remains a separate semantic text unit. Intermediate chained bubbles have no tail
+by default; an author may explicitly enable one.
+
+## 12.1 Sound Effect frame
+
+Sound Effect represents visualised sound as accessible text and uses the
+`sound-effect` discriminator. It is not Dialogue and is not an audio source.
+
+``` json
+{
+  "type": "sound-effect",
+  "text": "KRRRRAK!",
+  "style": "impact"
+}
+```
+
+The initial style catalogue is `burst`, `impact`, `motion`, `rumble`,
+`electronic`, and `ambient`; omitted style defaults to `impact`. Styles provide
+renderer-owned static treatments. Sound Effect otherwise uses shared Frame
+flow, positioning, typography, language, Beat, and reveal declarations.
+Arbitrary transforms, supplied font URLs, and generic motion remain deferred.
 
 ------------------------------------------------------------------------
 
@@ -1928,6 +1978,19 @@ All project-owned documents migrate directly; no legacy parser is retained.
   No story-provided font URLs are accepted. Sizes are small/medium/large/x-large;
   weight normal/bold; style normal/italic; align start/center/end; lineHeight
   compact/normal/relaxed; letterSpacing normal/wide. Semantic tones remain future.
+- Narrative `shape` defaults to `rectangle` and accepts `rectangle`,
+  `parallelogram`, or `torn-ribbon`. Dialogue defaults to `spoken`, uses an
+  `oval` bubble and a bottom `triangle` tail; `thought` uses a `cloud` bubble
+  and `circle-chain` tail. `fat-circle` is unsupported. Manual tails accept
+  eight physical directions and may be disabled. Adjacent Dialogue Frames in
+  one Panel may form an acyclic forward chain with `bridge`, `line`,
+  `bubble-chain`, or `none`; chain targets must be the next authored Dialogue.
+  Intermediate bubbles have no tail by default.
+- `sound-effect` is accessible visualised sound text. Its renderer-owned static
+  styles are `burst`, `impact`, `motion`, `rumble`, `electronic`, and `ambient`,
+  defaulting to `impact`. It uses shared Frame flow, positioning, typography,
+  locale, Element Beats, and reveal animation. It does not accept arbitrary
+  transforms, font families, audio, or target-driven motion.
 - Body/Panel `background` and inherited `color` accept six-digit hex colours.
   Panel padding/gap/radius accept none/small/medium/large. Border requires a colour
   and optional thin/medium/thick width. Opacity is 0–1. Align is start/center/end

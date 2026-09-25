@@ -40,7 +40,7 @@ function attachStory(story: NonNullable<ReturnType<typeof validateStory>['docume
   if (advance?.enabled) {
     const inputs = advance.inputs ?? ['controls'];
     controls = attachBeatControls(root, handle,
-      inputs.includes('keyboard'), inputs.includes('flip'), story.body.interaction?.scroll?.snap === 'beats', inputs.includes('tap'));
+      inputs.includes('keyboard'), inputs.includes('flip'), story.body.interaction?.scroll?.snap === 'beats', inputs.includes('tap'), false);
     handle.refreshBeats();
   }
 }

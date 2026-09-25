@@ -59,6 +59,7 @@ body { margin: 0; }
   border-top: 1px solid #bac9c6;
   background: #f7f4eb;
 }
+.reader-controls--hidden { display: none; }
 .reader-controls button {
   min-height: 44px;
   min-width: 100px;
