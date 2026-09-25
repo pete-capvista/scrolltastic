@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { parseStory, validateStory } from '../src/parser/parse';
-import { packageUrl, resolveStory } from '../src/reader/resolve-story';
+import { loadStoryRoot, packageUrl, resolveStory } from '../src/reader/resolve-story';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const fixture = () => JSON.parse(readFileSync(`public/stories/${id}/story.json`, 'utf8'));
@@ -62,6 +62,12 @@ describe('V5 language', () => {
   });
 });
 describe('portable reader resolution', () => {
+  it('prefers the host-owned deployment root over the static fallback', async () => {
+    const fetcher = vi.spyOn(globalThis, 'fetch');
+    await expect(loadStoryRoot(new AbortController().signal, 'https://blob.example.test/')).resolves.toBe('https://blob.example.test/');
+    expect(fetcher).not.toHaveBeenCalled();
+    fetcher.mockRestore();
+  });
   it('resolves the same package under local and remote roots', async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify(fixture()), { headers: { 'content-type': 'application/json; charset=utf-8' } }));
     for (const root of ['/stories/', 'https://content.example.test/library/']) {

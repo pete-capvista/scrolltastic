@@ -32,7 +32,8 @@ export async function resolveStory(id: string, storyRoot: string, hostUrl: strin
 }
 
 /** Host-owned runtime configuration; never read from an authored story. */
-export async function loadStoryRoot(signal: AbortSignal): Promise<string> {
+export async function loadStoryRoot(signal: AbortSignal, configuredRoot = import.meta.env.VITE_STORY_ROOT): Promise<string> {
+  if (configuredRoot?.trim()) return configuredRoot;
   const response = await fetch('/reader-config.json', { signal, cache: 'no-cache', credentials: 'same-origin', redirect: 'error' });
   if (response.status === 404) return '/stories/';
   if (!response.ok || !/^application\/json(?:\s*;|$)/i.test(response.headers.get('content-type') ?? '')) throw new Error('Reader configuration is unavailable.');

@@ -180,9 +180,10 @@ Contract 0.11 adds scoped Arrow Down/Up input. Contract 0.12 adds touch Flip rec
 
 Browser automation covers the URL-to-configuration-to-assets-to-rendered-DOM
 flow. It does not substitute for physical iOS Safari/Android testing.
-Vercel routing is configured but has not been deployed or verified on Vercel.
-Creator authentication, storage and publishing remain architectural contracts,
-not implemented backend features.
+Vercel routing is deployed and verified. Git pushes to `main` deploy production and
+other branches create Preview deployments. Production loads the migrated packages
+from Blob. Creator authentication and publishing remain the implementation contract
+documented in `blob-publishing-workflow.md`.
 
 
 Contract 0.8 adds BOTH + FIT as one scrubbed timeline with required IN,

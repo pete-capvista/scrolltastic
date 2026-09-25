@@ -121,11 +121,20 @@ with `/`; remote JSON needs CORS access and an `application/json` content type.
 Document redirects are rejected. Media paths stay under package `assets/` or
 `cards/`, with no executable URLs or path traversal.
 
+Deployments may set the public build variable `VITE_STORY_ROOT`; when present it
+takes precedence over `reader-config.json`. Production uses this to select the
+Vercel Blob package root while local development and Preview can retain fixtures.
+
 `npm run build` produces `dist/`; `vercel.json` supplies `/s/<id>` deep-link
 rewrites and no-index headers. Static fixture packages ship with the build;
 production creator uploads belong in independent durable storage. No provider,
 accounts, editor or publishing backend is introduced by V5. Hosting must serve
 runtime configuration/content independently if updates should survive code deployments.
+
+The proposed authenticated VS Code-to-Vercel-Blob publishing protocol is documented
+in [`docs/blob-publishing-workflow.md`](docs/blob-publishing-workflow.md). Production
+uses the Blob package root through its scoped `VITE_STORY_ROOT`; the existing fixtures
+have been migrated. The authenticated extension publishing API remains to be built.
 
 ## Verify
 
