@@ -1,6 +1,6 @@
 # Blob publishing workflow
 
-**Status:** Proposed implementation contract
+**Status:** Implemented initial publishing contract
 
 **Scope:** Publish a validated local Scrolltastic package from the VS Code
 extension to Vercel Blob.
@@ -47,9 +47,18 @@ The API resolves the GitHub identity and authorizes it against a server-owned
 publisher allow-list. A later account system can replace this authorization adapter
 without changing package layout or Story Language.
 
-The API issues short-lived, pathname-scoped Vercel Blob client tokens. It never
+The API issues short-lived, pathname-scoped Vercel Blob client tokens. Prepare and
+commit authorizations are signed with `SCROLLTASTIC_PUBLISH_SECRET`; each upload token
+is bound to one prepared manifest entry, including its pathname, type, and byte limit.
+The API never
 returns the store read/write token. Token constraints MUST include the exact staging
 pathname, expected content type, maximum byte size, expiry and overwrite policy.
+
+`SCROLLTASTIC_PUBLISHERS` is a comma-separated, case-insensitive GitHub login allow-list.
+`SCROLLTASTIC_PUBLISH_SECRET` must be an independently generated secret of at least 32
+characters. Both values and `BLOB_READ_WRITE_TOKEN` are server-only Vercel environment
+variables. The extension reads the API origin only from user settings; workspace settings
+cannot redirect the GitHub session token.
 
 ## Blob layout
 
@@ -161,7 +170,7 @@ The API:
    agreement and referenced asset completeness.
 4. Copies the complete staging package to immutable `_releases/...` storage.
 5. Copies assets/cards to the stable package first.
-6. Copies `story.json` last, using conditional write semantics for the expected
+6. Copies `story.json` last, using Blob `ifMatch` conditional write semantics for the expected
    revision. This document copy is the publication commit point.
 7. Returns the new revision, release ID and reader URL.
 
@@ -217,15 +226,16 @@ Do not silently fall back from Blob to bundled packages. A fallback could displa
 old story after a publish or deletion failure and would obscure the authoritative
 content source.
 
-## Implementation slices
+## Implementation status
 
-1. Add shared pure manifest/path/digest helpers and deterministic tests.
-2. Add server-side GitHub identity authorization and publish API contracts.
-3. Add Blob prepare/upload/commit operations with fake-storage unit tests.
-4. Add the extension command, progress, cancellation and conflict UI.
-5. Add integration tests against an isolated prefix/store and cleanup fixtures.
-6. Exercise the completed Blob reader cutover through publishing integration tests.
-7. Add rollback, story deletion and multi-user ownership only after publish is proven.
+Implemented: deterministic manifest/path/digest helpers, local schema validation,
+GitHub allow-list authorization, signed prepare/upload/commit contracts, direct Blob
+uploads, server-side byte/digest/schema verification, immutable release copies,
+conditional stable commits, progress/cancellation, conflict UI, and publication metadata.
+
+Deployment verification against the production store and automated cleanup of abandoned
+staging prefixes are operational tasks. Rollback, story deletion and multi-user ownership
+remain deliberately outside the first extension command.
 
 Rollback and deletion are deliberately not part of the first extension command.
 They are destructive operations and require explicit ownership, retention and

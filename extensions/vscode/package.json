@@ -5,46 +5,141 @@
   "version": "0.1.0",
   "publisher": "scrolltastic",
   "license": "UNLICENSED",
-  "repository": { "type": "git", "url": "https://github.com/pete-capvista/scrolltastic.git", "directory": "extensions/vscode" },
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Visualization", "Other"],
-  "keywords": ["scrolltastic", "story", "scrollytelling", "preview"],
-  "main": "./src/extension.js",
-  "activationEvents": ["onLanguage:json"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pete-capvista/scrolltastic.git",
+    "directory": "extensions/vscode"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "scrolltastic",
+    "story",
+    "scrollytelling",
+    "preview"
+  ],
+  "main": "./dist/host/index.js",
+  "activationEvents": [
+    "onLanguage:json"
+  ],
   "capabilities": {
-    "virtualWorkspaces": { "supported": false, "description": "Story preview requires a folder-backed workspace." },
-    "untrustedWorkspaces": { "supported": "limited", "description": "Preview is read-only in Restricted Mode; creating story packages is disabled." }
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Story preview requires a folder-backed workspace."
+    },
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Preview is read-only in Restricted Mode; creating story packages is disabled."
+    }
   },
   "contributes": {
     "commands": [
-      { "command": "scrolltastic.newStory", "title": "Scrolltastic: New Story" },
-      { "command": "scrolltastic.openPreview", "title": "Scrolltastic: Open Preview to Side" },
-      { "command": "scrolltastic.refreshPreview", "title": "Scrolltastic: Refresh Preview" },
-      { "command": "scrolltastic.togglePause", "title": "Scrolltastic: Pause/Resume Live Preview" },
-      { "command": "scrolltastic.restartPreview", "title": "Scrolltastic: Restart Preview" },
-      { "command": "scrolltastic.copyAssetReference", "title": "Scrolltastic: Copy Story Asset Reference" }
+      {
+        "command": "scrolltastic.newStory",
+        "title": "Scrolltastic: New Story"
+      },
+      {
+        "command": "scrolltastic.publishStory",
+        "title": "Scrolltastic: Publish Story"
+      },
+      {
+        "command": "scrolltastic.openPreview",
+        "title": "Scrolltastic: Open Preview to Side"
+      },
+      {
+        "command": "scrolltastic.refreshPreview",
+        "title": "Scrolltastic: Refresh Preview"
+      },
+      {
+        "command": "scrolltastic.togglePause",
+        "title": "Scrolltastic: Pause/Resume Live Preview"
+      },
+      {
+        "command": "scrolltastic.restartPreview",
+        "title": "Scrolltastic: Restart Preview"
+      },
+      {
+        "command": "scrolltastic.copyAssetReference",
+        "title": "Scrolltastic: Copy Story Asset Reference"
+      }
     ],
     "menus": {
       "editor/title": [
-        { "command": "scrolltastic.openPreview", "when": "resourceLangId == json", "group": "navigation@1" },
-        { "command": "scrolltastic.refreshPreview", "when": "resourceLangId == json", "group": "navigation@2" },
-        { "command": "scrolltastic.togglePause", "when": "resourceLangId == json", "group": "navigation@3" }
+        {
+          "command": "scrolltastic.publishStory",
+          "when": "resourceLangId == json && isWorkspaceTrusted",
+          "group": "navigation@0"
+        },
+        {
+          "command": "scrolltastic.openPreview",
+          "when": "resourceLangId == json",
+          "group": "navigation@1"
+        },
+        {
+          "command": "scrolltastic.refreshPreview",
+          "when": "resourceLangId == json",
+          "group": "navigation@2"
+        },
+        {
+          "command": "scrolltastic.togglePause",
+          "when": "resourceLangId == json",
+          "group": "navigation@3"
+        }
       ],
       "explorer/context": [
-        { "command": "scrolltastic.copyAssetReference", "when": "resourceScheme == file && !explorerResourceIsFolder", "group": "copy@1" }
+        {
+          "command": "scrolltastic.copyAssetReference",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "copy@1"
+        }
       ]
     },
     "configuration": {
       "title": "Scrolltastic",
       "properties": {
-        "scrolltastic.preview.debounceMs": { "type": "number", "default": 300, "minimum": 100, "maximum": 2000, "description": "Delay live story preview updates after JSON edits." },
-        "scrolltastic.preview.assetDebounceMs": { "type": "number", "default": 150, "minimum": 50, "maximum": 2000, "description": "Coalesce package asset changes before refreshing the preview." }
+        "scrolltastic.preview.debounceMs": {
+          "type": "number",
+          "default": 300,
+          "minimum": 100,
+          "maximum": 2000,
+          "description": "Delay live story preview updates after JSON edits."
+        },
+        "scrolltastic.preview.assetDebounceMs": {
+          "type": "number",
+          "default": 150,
+          "minimum": 50,
+          "maximum": 2000,
+          "description": "Coalesce package asset changes before refreshing the preview."
+        },
+        "scrolltastic.publish.apiBaseUrl": {
+          "type": "string",
+          "default": "https://scrolltastic.vercel.app",
+          "scope": "window",
+          "description": "Trusted HTTPS Scrolltastic publishing API origin. Set this in user settings; workspace values are ignored so a story package cannot redirect your GitHub credential."
+        }
       }
     }
   },
-  "files": ["src/**", "dist/**", "package.json", "README.md"],
+  "files": [
+    "src/**",
+    "dist/**",
+    "package.json",
+    "README.md"
+  ],
   "scripts": {
     "vscode:prepublish": "npm run build:vscode --prefix ../..",
+    "build:host": "ncc build src/extension.js -o dist/host -m -e vscode",
     "package": "npx @vscode/vsce package"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.45.0"
   }
 }

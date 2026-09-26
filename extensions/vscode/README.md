@@ -12,12 +12,25 @@ continuous scrolling remains available. Invalid edits leave the last valid
 render visible and mark the preview stale. Refresh and restart commands are
 available from the Command Palette.
 
+Run **Scrolltastic: Publish Story** to publish the open package. The command
+validates the exact saved JSON, checks every referenced asset, reports excluded
+unreferenced files, signs in through VS Code's GitHub authentication provider,
+and uploads directly to a short-lived staging prefix in Vercel Blob. The server
+verifies the manifest and story again before atomically committing the stable
+story document. Concurrent changes produce an explicit overwrite confirmation.
+The Blob credential is never sent to or stored by the extension.
+
+Publishing defaults to `https://scrolltastic.vercel.app`. A different trusted
+HTTPS origin can be set as `scrolltastic.publish.apiBaseUrl` in VS Code user
+settings. Workspace values are ignored to prevent a story package from
+redirecting GitHub credentials.
+
 The preview runs the same parser, renderer, animation and Beat navigation code
 as the web reader. Local package media and bundled extension resources are the
 only resources exposed to its webview. The extension does not execute story
 content. Creating package folders is disabled in Restricted Mode.
 
-This first implementation provides the edit/preview workflow. Story-specific
+The extension provides edit, preview, and authenticated publish workflows. Story-specific
 Problems diagnostics, schema IntelliSense and asset/Beat autocomplete are
 planned for later iterations.
 

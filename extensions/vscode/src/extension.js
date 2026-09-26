@@ -3,6 +3,7 @@ const { randomBytes, randomUUID } = require('node:crypto');
 const path = require('node:path');
 const { realpath } = require('node:fs/promises');
 const { collectStoryAssetPaths, isStoryAssetPath } = require('./package-path');
+const { publishStory } = require('./publisher');
 
 const TEXT_DEBOUNCE = 300;
 const ASSET_DEBOUNCE = 150;
@@ -202,6 +203,8 @@ function registerCommand(context, id, callback) {
 
 function activate(context) {
   const extensionUri = context.extensionUri;
+  const publishOutput = vscode.window.createOutputChannel('Scrolltastic Publish');
+  context.subscriptions.push(publishOutput);
   registerCommand(context, 'scrolltastic.newStory', async () => {
     if (!vscode.workspace.isTrusted) {
       void vscode.window.showWarningMessage('Trust this workspace before creating a Scrolltastic story package.');
@@ -224,6 +227,13 @@ function activate(context) {
     const document = await vscode.workspace.openTextDocument(storyUri);
     await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
     openPreview(document, extensionUri);
+  });
+  registerCommand(context, 'scrolltastic.publishStory', async () => {
+    try { await publishStory(vscode, context, vscode.window.activeTextEditor?.document, publishOutput); }
+    catch (error) {
+      publishOutput.appendLine(`[${new Date().toISOString()}] Publish failed: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
+      void vscode.window.showErrorMessage(error instanceof Error ? error.message : 'The story could not be published.');
+    }
   });
   registerCommand(context, 'scrolltastic.openPreview', () => openPreview(vscode.window.activeTextEditor?.document, extensionUri));
   registerCommand(context, 'scrolltastic.refreshPreview', () => {

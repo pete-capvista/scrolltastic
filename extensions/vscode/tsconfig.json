@@ -4,5 +4,5 @@
     "noEmit": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["webview/**/*.ts"]
+  "include": ["webview/**/*.ts", "host/**/*.ts"]
 }

@@ -131,10 +131,14 @@ production creator uploads belong in independent durable storage. No provider,
 accounts, editor or publishing backend is introduced by V5. Hosting must serve
 runtime configuration/content independently if updates should survive code deployments.
 
-The proposed authenticated VS Code-to-Vercel-Blob publishing protocol is documented
-in [`docs/blob-publishing-workflow.md`](docs/blob-publishing-workflow.md). Production
+The authenticated VS Code-to-Vercel-Blob publishing workflow is documented in
+[`docs/blob-publishing-workflow.md`](docs/blob-publishing-workflow.md). Production
 uses the Blob package root through its scoped `VITE_STORY_ROOT`; the existing fixtures
-have been migrated. The authenticated extension publishing API remains to be built.
+have been migrated. The extension performs local validation and uploads only referenced
+package files through short-lived, manifest-bound tokens. The server revalidates every
+byte and commits `story.json` with optimistic concurrency after creating an immutable
+release. Deployment requires `BLOB_READ_WRITE_TOKEN`, `SCROLLTASTIC_PUBLISHERS`, and
+`SCROLLTASTIC_PUBLISH_SECRET` in the Vercel project.
 
 ## Verify
 
