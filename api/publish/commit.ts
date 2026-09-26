@@ -1,4 +1,4 @@
-import { BlobPreconditionFailedError, copy, del } from '@vercel/blob';
+import { BlobPreconditionFailedError, copy, del, put } from '@vercel/blob';
 import { blobToken, errorResponse, manifestHash, optionalHead, PublishError, readAndVerify, requirePublisher, stagingPrefix, validateManifest, validatePublishedStory, verifyClaims, type PublishClaims } from './_shared.js';
 
 export async function POST(request: Request): Promise<Response> {
@@ -36,12 +36,17 @@ export async function POST(request: Request): Promise<Response> {
     for (const file of ordered) {
       let result;
       try {
-        result = await copy(`${prefix}${file.path}`, `${storyId}/${file.path}`, {
-          access: 'public', token, addRandomSuffix: false,
-          allowOverwrite: file.path === 'story.json' ? claims.baseRevision !== null : true,
-          ...(file.path === 'story.json' && claims.baseRevision ? { ifMatch: claims.baseRevision } : {}),
-          cacheControlMaxAge: 60, contentType: file.contentType,
-        });
+        result = file.path === 'story.json'
+          ? await put(`${storyId}/${file.path}`, Buffer.from(storyBytes!), {
+              access: 'public', token, addRandomSuffix: false,
+              allowOverwrite: claims.baseRevision !== null,
+              ...(claims.baseRevision ? { ifMatch: claims.baseRevision } : {}),
+              cacheControlMaxAge: 60, contentType: file.contentType,
+            })
+          : await copy(`${prefix}${file.path}`, `${storyId}/${file.path}`, {
+              access: 'public', token, addRandomSuffix: false, allowOverwrite: true,
+              cacheControlMaxAge: 60, contentType: file.contentType,
+            });
       } catch (error) {
         if (file.path === 'story.json' && (
           error instanceof BlobPreconditionFailedError

@@ -170,8 +170,9 @@ The API:
    agreement and referenced asset completeness.
 4. Copies the complete staging package to immutable `_releases/...` storage.
 5. Copies assets/cards to the stable package first.
-6. Copies `story.json` last, using Blob `ifMatch` conditional write semantics for the expected
-   revision. This document copy is the publication commit point.
+6. Writes the already verified `story.json` bytes last with Blob `put` and `ifMatch`
+   conditional write semantics for the expected
+   revision. This document write is the publication commit point.
 7. Returns the new revision, release ID and reader URL.
 
 The stable Blob pathname is overwritten deliberately. Vercel Blob documents a
