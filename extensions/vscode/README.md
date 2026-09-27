@@ -20,10 +20,20 @@ verifies the manifest and story again before atomically committing the stable
 story document. Concurrent changes produce an explicit overwrite confirmation.
 The Blob credential is never sent to or stored by the extension.
 
+Run **Scrolltastic: Download Live Story** to resume from the currently published
+version. Enter its UUID or reader URL and choose a local parent folder. The command
+downloads the validated live `story.json` and every referenced asset into a new
+folder named with the story UUID, then opens it with a live preview. If that folder
+already exists, the extension asks before replacing it and first saves the complete
+old folder as a timestamped ZIP in the parent's `archive/` folder.
+
 Publishing defaults to `https://scrolltastic.vercel.app`. A different trusted
 HTTPS origin can be set as `scrolltastic.publish.apiBaseUrl` in VS Code user
 settings. Workspace values are ignored to prevent a story package from
 redirecting GitHub credentials.
+The corresponding live package root defaults to
+`https://scrolltastic.vercel.app/stories/` and can be changed with the user-level
+`scrolltastic.download.storyRootUrl` setting; workspace values are likewise ignored.
 
 The preview runs the same parser, renderer, animation and Beat navigation code
 as the web reader. Local package media and bundled extension resources are the

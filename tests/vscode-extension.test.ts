@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { inflateRawSync } from 'node:zlib';
 import { validateStory } from '../src/parser/parse';
 import { resolveMappedAsset } from '../src/assets/resolve';
 import { collectStoryAssetPaths, isStoryAssetPath } from '../extensions/vscode/src/package-path.js';
+import archive from '../extensions/vscode/src/archive.js';
+import downloader from '../extensions/vscode/src/downloader.js';
 
 describe('VS Code story package assets', () => {
   it('accepts only package-relative media paths supported by Story Language V5', () => {
@@ -33,6 +36,35 @@ describe('VS Code story package assets', () => {
     expect(resolveMappedAsset('assets/scene.svg', assets)).toContain('revision=2');
     expect(() => resolveMappedAsset('../outside.svg', assets)).toThrow('Invalid package asset');
     expect(() => resolveMappedAsset('cards/missing.webp', assets)).toThrow('unavailable');
+  });
+});
+
+describe('VS Code live story download', () => {
+  it('accepts a story UUID or published reader URL', () => {
+    const id = '550e8400-e29b-41d4-a716-446655440000';
+    expect(downloader.storyIdFromInput(id)).toBe(id);
+    expect(downloader.storyIdFromInput(`https://scrolltastic.vercel.app/s/${id}`)).toBe(id);
+    expect(() => downloader.storyIdFromInput('../story')).toThrow('V5 story UUID');
+  });
+
+  it('ignores workspace overrides for the trusted live story root', () => {
+    const vscode = {
+      workspace: { getConfiguration: () => ({ inspect: () => ({ globalValue: undefined, workspaceValue: 'https://evil.example/', defaultValue: 'https://scrolltastic.vercel.app/stories/' }) }) },
+    };
+    expect(downloader.downloadStoryRoot(vscode)).toBe('https://scrolltastic.vercel.app/stories/');
+    expect(() => downloader.downloadStoryRoot({
+      workspace: { getConfiguration: () => ({ inspect: () => ({ globalValue: 'http://example.test/stories/' }) }) },
+    })).toThrow('HTTPS directory URL');
+  });
+
+  it('creates a readable deflated ZIP entry for an archived folder', () => {
+    const zip = archive.createZip([{ path: 'story.json', bytes: Buffer.from('{"title":"old"}'), mtime: new Date('2026-01-02T03:04:06') }]);
+    expect(zip.readUInt32LE(0)).toBe(0x04034b50);
+    const nameLength = zip.readUInt16LE(26);
+    const compressedLength = zip.readUInt32LE(18);
+    const compressed = zip.subarray(30 + nameLength, 30 + nameLength + compressedLength);
+    expect(inflateRawSync(compressed).toString()).toBe('{"title":"old"}');
+    expect(zip.readUInt32LE(zip.length - 22)).toBe(0x06054b50);
   });
 });
 

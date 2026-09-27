@@ -59,6 +59,7 @@ Commands:
 | Command | Behavior |
 | --- | --- |
 | New Story | Create a minimal valid V5 package in a selected parent folder |
+| Download Live Story | Fetch a published package into its UUID folder; ZIP and replace an existing folder after confirmation |
 | Open Preview to Side | Open or reveal the preview bound to the current story |
 | Refresh Preview | Resend the current buffer and refresh asset revisions |
 | Pause/Resume Live Preview | Hold the current view while making a larger edit |

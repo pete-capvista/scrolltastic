@@ -48,6 +48,10 @@
         "title": "Scrolltastic: Publish Story"
       },
       {
+        "command": "scrolltastic.downloadStory",
+        "title": "Scrolltastic: Download Live Story"
+      },
+      {
         "command": "scrolltastic.openPreview",
         "title": "Scrolltastic: Open Preview to Side"
       },
@@ -74,6 +78,11 @@
           "command": "scrolltastic.publishStory",
           "when": "resourceLangId == json && isWorkspaceTrusted",
           "group": "navigation@0"
+        },
+        {
+          "command": "scrolltastic.downloadStory",
+          "when": "resourceLangId == json && isWorkspaceTrusted",
+          "group": "navigation@0.5"
         },
         {
           "command": "scrolltastic.openPreview",
@@ -121,6 +130,12 @@
           "default": "https://scrolltastic.vercel.app",
           "scope": "window",
           "description": "Trusted HTTPS Scrolltastic publishing API origin. Set this in user settings; workspace values are ignored so a story package cannot redirect your GitHub credential."
+        },
+        "scrolltastic.download.storyRootUrl": {
+          "type": "string",
+          "default": "https://scrolltastic.vercel.app/stories/",
+          "scope": "window",
+          "description": "Trusted HTTPS root containing live story packages. Set this in user settings; workspace values are ignored."
         }
       }
     }

@@ -4,6 +4,7 @@ const path = require('node:path');
 const { realpath } = require('node:fs/promises');
 const { collectStoryAssetPaths, isStoryAssetPath } = require('./package-path');
 const { publishStory } = require('./publisher');
+const { downloadLiveStory } = require('./downloader');
 
 const TEXT_DEBOUNCE = 300;
 const ASSET_DEBOUNCE = 150;
@@ -233,6 +234,15 @@ function activate(context) {
     catch (error) {
       publishOutput.appendLine(`[${new Date().toISOString()}] Publish failed: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
       void vscode.window.showErrorMessage(error instanceof Error ? error.message : 'The story could not be published.');
+    }
+  });
+  registerCommand(context, 'scrolltastic.downloadStory', async () => {
+    try {
+      const document = await downloadLiveStory(vscode, vscode.window.activeTextEditor?.document, publishOutput);
+      if (document) openPreview(document, extensionUri);
+    } catch (error) {
+      publishOutput.appendLine(`[${new Date().toISOString()}] Download failed: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
+      void vscode.window.showErrorMessage(error instanceof Error ? error.message : 'The live story could not be downloaded.');
     }
   });
   registerCommand(context, 'scrolltastic.openPreview', () => openPreview(vscode.window.activeTextEditor?.document, extensionUri));
