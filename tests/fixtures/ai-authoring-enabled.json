@@ -1,0 +1,30 @@
+{
+  "storyLanguage": "5",
+  "id": "99999999-9999-4999-8999-999999999999",
+  "title": "AI authoring capability fixture",
+  "authoring": {
+    "ai": {
+      "enabled": true
+    }
+  },
+  "body": {
+    "containers": [
+      {
+        "type": "container",
+        "id": "fixture-container",
+        "flow": [
+          {
+            "type": "panel",
+            "id": "fixture-panel",
+            "frames": [
+              {
+                "type": "narrative",
+                "text": "Authoring capability does not change reader rendering."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

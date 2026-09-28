@@ -84,6 +84,7 @@ export interface StoryDocument {
   language?: string;
   direction?: "ltr" | "rtl" | "auto";
   beats?: RootBeat[];
+  authoring?: Authoring;
   metadata?: {
     [k: string]: string | number | boolean | null;
   };
@@ -492,4 +493,13 @@ export interface RootBeat {
   offset?: string;
   label?: string;
   target: Id;
+}
+/**
+ * This interface was referenced by `StoryDocument`'s JSON-Schema
+ * via the `definition` "Authoring".
+ */
+export interface Authoring {
+  ai: {
+    enabled: boolean;
+  };
 }

@@ -11,6 +11,19 @@ function issues(document: unknown) {
   catch (error) { expect(error).toBeInstanceOf(StoryValidationError); return (error as StoryValidationError).diagnostics; }
 }
 describe('document contract', () => {
+  it('accepts the optional AI authoring capability and rejects malformed declarations', () => {
+    const fixture = JSON.parse(readFileSync('tests/fixtures/ai-authoring-enabled.json', 'utf8'));
+    expect(parseStory(fixture).authoring).toEqual({ ai: { enabled: true } });
+    expect(parseStory(minimal()).authoring).toBeUndefined();
+    expect(parseStory({ ...minimal(), authoring: { ai: { enabled: false } } }).authoring).toEqual({ ai: { enabled: false } });
+    for (const authoring of [
+      {},
+      { ai: {} },
+      { ai: { enabled: 'yes' } },
+      { ai: { enabled: true, model: 'provider/model' } },
+      { ai: { enabled: true }, public: true },
+    ]) expect(() => parseStory({ ...minimal(), authoring })).toThrow(StoryValidationError);
+  });
   it('normalizes without mutating authored input', () => {
     const input = minimal();
     const before = structuredClone(input);

@@ -38,6 +38,9 @@
         "$ref": "#/definitions/RootBeat"
       }
     },
+    "authoring": {
+      "$ref": "#/definitions/Authoring"
+    },
     "metadata": {
       "type": "object",
       "maxProperties": 32,
@@ -79,6 +82,27 @@
   ],
   "additionalProperties": false,
   "definitions": {
+    "Authoring": {
+      "type": "object",
+      "properties": {
+        "ai": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "enabled"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "ai"
+      ],
+      "additionalProperties": false
+    },
     "ElementBeat": {
       "type": "object",
       "properties": {

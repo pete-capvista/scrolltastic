@@ -234,6 +234,11 @@ Example:
   "id": "50b19320-50ae-4b77-a449-e3f409cfaef8",
   "title": "The Red Chain",
   "language": "en-NZ",
+  "authoring": {
+    "ai": {
+      "enabled": true
+    }
+  },
   "body": {},
   "beats": []
 }
@@ -250,10 +255,19 @@ Recommended root properties:
   `direction`       enum                       no `ltr`, `rtl`, `auto`
   `body`            object                    yes Story body
   `beats`           array                      no Story beats
+  `authoring`       object                     no Host authoring capability declarations
   `accessibility`   object                     no Story-level accessibility metadata
   `metadata`        object                     no Non-rendering descriptive metadata
 
 Unknown properties SHOULD produce validation feedback.
+
+`authoring.ai.enabled` is an optional boolean capability declaration. When `true`,
+a supporting host MAY offer AI-assisted authoring if its server-side account policy
+also authorizes the current user. It does not grant access, select a provider or
+model, contain a prompt, define a budget, or make a story publicly editable. Hosts
+that do not support authoring continue to render the story normally. `false` and an
+absent declaration both mean that the host MUST NOT expose AI authoring for the
+story.
 
 ------------------------------------------------------------------------
 
@@ -1946,6 +1960,10 @@ All project-owned documents migrate directly; no legacy parser is retained.
 
 - A story requires `storyLanguage: "5"`, root UUID v4 `id`, nonblank `title`
   and `body`. Body has no separate ID/title. `/s/<id>` remains the reader route.
+- Optional `authoring.ai.enabled` is a host capability declaration only. `true`
+  permits a supporting host to offer AI authoring when its independent server-side
+  account and story policy also authorizes the user. It grants no access, provider,
+  model, budget or commit authority; unsupported hosts render the story normally.
 - Containers use `flow`, containing typed Panels and first-class `Space`.
   `panels` is not accepted. Space retains its existing explicit height semantics.
 - Frame `normal`, `overlay`, `overflow` and shared physical anchors retain their
