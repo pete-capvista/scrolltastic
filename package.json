@@ -9,6 +9,11 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "generate": "node scripts/generate-types.mjs && node scripts/generate-validator.mjs",
+    "db:migrate": "node scripts/migrate-database.mjs",
+    "db:import-production": "node scripts/import-production-inventory.mjs",
+    "db:reconcile-commits": "node scripts/reconcile-commit-attempts.mjs",
+    "db:cleanup-draft-assets": "node scripts/cleanup-draft-assets.mjs",
+    "db:reconcile-generations": "node scripts/reconcile-generations.mjs",
     "check:generated": "node scripts/generate-types.mjs --check && node scripts/generate-validator.mjs --check",
     "typecheck:vscode": "tsc --noEmit -p extensions/vscode/tsconfig.json",
     "build:vscode": "npm run check:generated && npm run typecheck:vscode && vite build --config extensions/vscode/vite.config.mts && vite build --config extensions/vscode/vite.host.config.mts && npm run build:host --prefix extensions/vscode",
@@ -21,8 +26,14 @@
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",
+    "@vercel/functions": "^3.9.9",
     "ajv": "^8.20.0",
-    "gsap": "^3.15.0"
+    "gsap": "^3.15.0",
+    "jose": "^6.2.12",
+    "nostr-tools": "^2.25.2",
+    "openai": "^7.25.0",
+    "postgres": "^3.4.9",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

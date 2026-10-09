@@ -1,14 +1,15 @@
 import { BlobPreconditionFailedError, copy, del, put } from '@vercel/blob';
 import { blobToken, errorResponse, manifestHash, optionalHead, PublishError, readAndVerify, requirePublisher, stagingPrefix, validateManifest, validatePublishedStory, verifyClaims, type PublishClaims } from './_shared.js';
+import { recordPublishedRelease } from '../../src/persistence/postgres.js';
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const publisher = await requirePublisher(request);
     const body: unknown = await request.json();
     if (!body || typeof body !== 'object') throw new PublishError(400, 'invalid_manifest', 'The commit request is invalid.');
     const record = body as Record<string, unknown>;
     const files = validateManifest(record.files);
     const claims = verifyClaims<PublishClaims>(record.publishTicket, 'publish');
+    const { publisher, principal } = await requirePublisher(request, claims.storyId);
     if (claims.publisher !== publisher) throw new PublishError(403, 'forbidden', 'This publish belongs to another publisher.');
     if (claims.manifestHash !== manifestHash(files)) throw new PublishError(400, 'invalid_manifest', 'The package differs from the prepared manifest.');
     const { storyId, publishId } = claims;
@@ -57,10 +58,19 @@ export async function POST(request: Request): Promise<Response> {
       if (file.path === 'story.json') publishedStory = result;
     }
     try { await del(files.map(file => `${prefix}${file.path}`), { token }); } catch (error) { console.warn('Staging cleanup failed', { publishId, error }); }
+    let inventoryRecorded = false;
+    try {
+      inventoryRecorded = await recordPublishedRelease({
+        storyId, releaseId: publishId, etag: publishedStory!.etag, manifest: files,
+        documentDigest: story.sha256, storagePrefix: `_releases/${storyId}/${publishId}/`, actor: principal,
+      });
+    } catch (error) {
+      console.error('Published release inventory requires reconciliation', { storyId, publishId, error });
+    }
     return Response.json({
       storyId, publishId, releaseId: publishId, revision: publishedStory!.etag,
       readerUrl: `https://scrolltastic.vercel.app/s/${storyId}`, files: files.length,
-      bytes: files.reduce((sum, file) => sum + file.size, 0),
+      bytes: files.reduce((sum, file) => sum + file.size, 0), inventoryRecorded,
     });
   } catch (error) { return errorResponse(error); }
 }

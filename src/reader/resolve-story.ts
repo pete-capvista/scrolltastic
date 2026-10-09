@@ -17,8 +17,16 @@ export interface ResolvedStory {
 }
 export async function resolveStory(id: string, storyRoot: string, hostUrl: string, signal: AbortSignal, fetcher: typeof fetch = fetch): Promise<ResolvedStory> {
   const assetBaseUrl = packageUrl(id, storyRoot, hostUrl);
+  return resolveStoryPackage(id, assetBaseUrl, hostUrl, signal, fetcher, 'omit');
+}
+
+export async function resolveStoryPackage(id: string, packageBase: string, hostUrl: string, signal: AbortSignal, fetcher: typeof fetch = fetch, credentials: RequestCredentials = 'same-origin'): Promise<ResolvedStory> {
+  if (!storyIdPattern.test(id)) throw new Error('Invalid story identifier.');
+  const base = new URL(packageBase, hostUrl);
+  if (!['http:', 'https:'].includes(base.protocol) || base.username || base.password || base.search || base.hash || !base.pathname.endsWith('/')) throw new Error('Story package URL is invalid.');
+  const assetBaseUrl = base.href;
   const documentUrl = new URL('story.json', assetBaseUrl).href;
-  const response = await fetcher(documentUrl, { signal, credentials: 'omit', redirect: 'error' });
+  const response = await fetcher(documentUrl, { signal, credentials, redirect: 'error' });
   if (!response.ok) throw new Error(response.status === 404
     ? 'This story is unavailable. Check the link and try again.'
     : 'The story could not be loaded. Please try again.');

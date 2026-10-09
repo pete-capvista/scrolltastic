@@ -2,11 +2,11 @@ import { errorResponse, manifestHash, newPublishId, optionalHead, PublishError, 
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const publisher = await requirePublisher(request);
     const body: unknown = await request.json();
     if (!body || typeof body !== 'object') throw new PublishError(400, 'invalid_manifest', 'The publish request is invalid.');
     const record = body as Record<string, unknown>;
     const storyId = validateStoryId(record.storyId);
+    const { publisher } = await requirePublisher(request, storyId);
     const files = validateManifest(record.files);
     const requestedRevision = validateBaseRevision(record.baseRevision);
     if (record.force !== undefined && typeof record.force !== 'boolean') throw new PublishError(400, 'invalid_manifest', 'The overwrite choice is invalid.');

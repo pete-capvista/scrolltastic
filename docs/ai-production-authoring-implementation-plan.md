@@ -87,7 +87,7 @@ schema migration or provision production services until it is accepted.
 | Tenancy | One default organization, explicit story memberships, roles `viewer/editor/publisher/owner` | Existing approved GitHub publishers are migrated to owners or publishers explicitly. |
 | Relational store | Managed Postgres with transactional migrations; use a small typed query layer | Transactions enforce reservations, revision ancestry, membership, and commit state. Do not encode these only in Blob metadata. |
 | Object storage | Retain the public production Blob store; use a separate private store, or a private namespace with authenticated delivery, for drafts | Public production URLs stay stable. Draft authorization never depends on an unguessable pathname. |
-| AI routing | One server-side AI gateway account with an allow-listed model policy | Provider keys and failover remain centralized; model IDs are configuration, not authored JSON. |
+| AI routing | A provider-neutral runner with an initial official OpenAI SDK adapter and allow-listed model policy | Provider credentials remain server-side environment configuration; model IDs are configuration, not authored JSON. |
 | First-release media | User uploads only; no AI image generation | Reduces provenance, safety, persistence, and cost scope. |
 | Reader affordance | Hide Edit from anonymous users initially | Ordinary reading receives no authoring chrome. |
 | Retention | Define periods for abandoned uploads/workspaces, conversations, audit records, and deleted accounts | Cleanup jobs can be implemented and tested before real user content accumulates. |
@@ -95,7 +95,7 @@ schema migration or provision production services until it is accepted.
 
 Phase 0 deliverables:
 
-1. Update the design's status and add ADRs for identity, database, storage, AI gateway,
+1. Update the design's status and add ADRs for identity, database, storage, AI provider,
    retention, and initial quotas.
 2. Define API conventions: opaque IDs, UTC timestamps, idempotency keys, cursors,
    stable error envelopes, request IDs, CSRF/origin policy, and optimistic concurrency.
@@ -257,7 +257,7 @@ used by each generation.
 Exit: spec, schema, generated artifacts, examples, and tests agree; existing stories
 remain valid; the renderer has no AI dependency or visual regression.
 
-### Phase 2: accounts, policy, and release inventory
+### Phase 2: accounts, policy, and release inventory (implemented; deployment pending 2026-09-28)
 
 1. Implement provider-neutral internal principals and secure HTTP-only browser sessions.
 2. Add strict origin checks, CSRF protection for cookie mutations, session rotation,
@@ -271,7 +271,7 @@ remain valid; the renderer has no AI dependency or visual regression.
 Exit: document flags never grant access; enumeration and cross-tenant access tests
 fail closed; existing VS Code publishing still works.
 
-### Phase 3: non-AI workspace, revision, preview, and promotion
+### Phase 3: non-AI workspace, revision, preview, and promotion (implemented; provider verification pending 2026-09-28)
 
 1. Create or resume a workspace pinned to the exact production release and ETag.
 2. Materialize an immutable D0 revision containing the complete package manifest.
@@ -292,7 +292,7 @@ Exit: an authorized publisher can complete the full safety path without AI; stal
 ETags, changed heads, missing acknowledgements, and replayed idempotency keys behave
 deterministically.
 
-### Phase 4: editor shell and selection bridge
+### Phase 4: editor shell and selection bridge (implemented 2026-09-28)
 
 1. Add the durable editor route and responsive split/drawer layout suitable for
    portrait mobile and desktop.
@@ -309,7 +309,7 @@ Exit: selection is exact and non-invasive across normal/overlay/overflow Frames,
 Card FIT height changes, Mask transitions, mobile viewports, keyboard-only use, and
 screen-reader navigation.
 
-### Phase 5: secure draft uploads
+### Phase 5: secure draft uploads (implemented; provider verification pending 2026-09-29)
 
 1. Prepare a workspace/path/file-bound short-lived upload grant after authorization
    and quota reservation.
@@ -326,7 +326,7 @@ screen-reader navigation.
 Exit: polyglots, spoofed extensions, oversized dimensions, traversal, active SVG,
 cross-workspace asset IDs, and expired grants are rejected; no draft asset is public.
 
-### Phase 6: persisted conversation and read-only AI
+### Phase 6: persisted conversation and read-only AI (implemented; provider verification pending 2026-09-29)
 
 1. Add addressable conversations and generation resources before starting any stream.
 2. Build bounded authoring context from schema/rules, current revision, outline,
@@ -346,7 +346,7 @@ cross-workspace asset IDs, and expired grants are rejected; no draft asset is pu
 Exit: the assistant can inspect and clarify but cannot mutate a draft; refreshing or
 disconnecting loses no completed output or audit state; quota denial invokes no model.
 
-### Phase 7: typed patch proposals and immutable AI revisions
+### Phase 7: typed patch proposals and immutable AI revisions (implemented; provider verification pending 2026-09-29)
 
 1. Define a small discriminated operation union over V5 documents. Initial operations
    should cover tested property replacement/removal and child insertion/removal/move
@@ -368,7 +368,7 @@ Exit: fuzz/property tests show patches cannot escape permitted paths; unresolved
 failed preconditions, invalid V5, missing assets, and stale heads create no revision.
 Every valid AI revision is reproducible from its recorded base and operations.
 
-### Phase 8: story memory and operational controls
+### Phase 8: story memory and operational controls (implemented; deployment verification pending 2026-09-29)
 
 1. Add propose/review/edit/reject flows independent from story commit.
 2. Retrieve only relevant approved entries within a strict context budget and record
@@ -383,7 +383,7 @@ Every valid AI revision is reproducible from its recorded base and operations.
 Exit: memory provenance and review are complete; hard limits stop overspend; cleanup
 never deletes assets referenced by a live draft or release.
 
-### Phase 9: hardening and controlled rollout
+### Phase 9: hardening and controlled rollout (implemented locally; deployed-environment gates pending 2026-09-29)
 
 1. Run the full authorization matrix, IDOR, CSRF, session fixation, replay,
    prompt-injection, malformed tool call, patch-fuzzing, upload, concurrency, ETag,

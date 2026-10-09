@@ -1,6 +1,9 @@
 import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { BlobNotFoundError, get, head, type HeadBlobResult } from '@vercel/blob';
 import { validateStory } from '../../src/parser/parse.js';
+import { authenticateRequest, AuthenticationError } from '../../src/auth/identity.js';
+import { canStory } from '../../src/auth/policy.js';
+import { storyMembershipRepository } from '../../src/persistence/postgres.js';
 
 export const MAX_FILES = 256;
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -33,6 +36,11 @@ export interface UploadClaims {
   storyId: string;
   file: PublishFile;
   expiresAt: number;
+}
+
+export interface AuthorizedPublisher {
+  publisher: string;
+  principal: import('../../src/auth/model.js').Principal;
 }
 
 export class PublishError extends Error {
@@ -89,18 +97,20 @@ export function verifyClaims<T extends PublishClaims | UploadClaims>(token: unkn
   return typed;
 }
 
-export async function requirePublisher(request: Request): Promise<string> {
-  const authorization = request.headers.get('authorization');
-  if (!authorization?.startsWith('Bearer ')) throw new PublishError(401, 'unauthenticated', 'Sign in with GitHub to publish.');
-  const response = await fetch('https://api.github.com/user', {
-    headers: { authorization, accept: 'application/vnd.github+json', 'user-agent': 'scrolltastic-publisher' },
-  });
-  if (!response.ok) throw new PublishError(401, 'unauthenticated', 'Your GitHub session is no longer valid.');
-  const value: unknown = await response.json();
-  const login = value && typeof value === 'object' && 'login' in value && typeof value.login === 'string' ? value.login.toLowerCase() : '';
-  const allowed = new Set((process.env.SCROLLTASTIC_PUBLISHERS ?? '').split(',').map(item => item.trim().toLowerCase()).filter(Boolean));
-  if (!login || !allowed.has(login)) throw new PublishError(403, 'forbidden', 'This GitHub account is not authorized to publish stories.');
-  return login.replace(/[^a-z0-9-]/g, '-');
+export async function requirePublisher(request: Request, storyId: string): Promise<AuthorizedPublisher> {
+  let principal;
+  try { principal = await authenticateRequest(request); }
+  catch (error) {
+    if (error instanceof AuthenticationError) throw new PublishError(error.status, error.status === 503 ? 'internal_error' : 'unauthenticated', error.message);
+    throw error;
+  }
+  if (!principal) throw new PublishError(401, 'unauthenticated', 'Sign in to publish.');
+  if (!await canStory(storyMembershipRepository(), storyId, principal, 'story:publish')) {
+    throw new PublishError(403, 'forbidden', 'This account is not authorized to publish this story.');
+  }
+  const identityKey = principal.provider === 'github' ? principal.subject : principal.accountId;
+  if (!identityKey) throw new PublishError(403, 'forbidden', 'This account cannot own a publish operation.');
+  return { publisher: identityKey.toLowerCase().replace(/[^a-z0-9-]/g, '-'), principal };
 }
 
 export function contentTypeForPath(pathname: string): string | undefined {

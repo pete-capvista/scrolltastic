@@ -1,13 +1,18 @@
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { contentTypeForPath, manifestHash, signClaims, validateManifest, validatePublishedStory, verifyClaims, type PublishClaims } from '../api/publish/_shared';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { contentTypeForPath, manifestHash, requirePublisher, signClaims, validateManifest, validatePublishedStory, verifyClaims, type PublishClaims } from '../server-api/publish/_shared';
 
 const require = createRequire(import.meta.url);
 const publisher = require('../extensions/vscode/src/publisher.js') as {
   manifestEntry(path: string, bytes: Buffer): { path: string; size: number; sha256: string; contentType: string };
   publishingApiBase(vscode: unknown): string;
 };
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
 
 describe('publishing package contract', () => {
   it('builds deterministic content metadata accepted by the server', () => {
@@ -50,7 +55,9 @@ describe('publishing package contract', () => {
     };
     const token = signClaims(claims, 'a-secure-test-secret-that-is-long-enough');
     expect(verifyClaims<PublishClaims>(token, 'publish', 'a-secure-test-secret-that-is-long-enough')).toEqual(claims);
-    expect(() => verifyClaims(`${token.slice(0, -1)}x`, 'publish', 'a-secure-test-secret-that-is-long-enough')).toThrow('invalid');
+    const [payload, signature] = token.split('.');
+    const tampered = `${payload}.${signature[0] === 'a' ? 'b' : 'a'}${signature.slice(1)}`;
+    expect(() => verifyClaims(tampered, 'publish', 'a-secure-test-secret-that-is-long-enough')).toThrow('invalid');
     expect(manifestHash(files)).not.toBe(manifestHash([{ ...files[0], sha256: '0'.repeat(64) }]));
   });
 
@@ -62,6 +69,16 @@ describe('publishing package contract', () => {
     };
     const secret = 'a-secure-test-secret-that-is-long-enough';
     expect(() => verifyClaims(signClaims(claims, secret), 'publish', secret)).toThrow('expired');
+  });
+
+  it('routes legacy GitHub publishing through the shared story policy without granting edit access', async () => {
+    vi.stubEnv('SCROLLTASTIC_PUBLISHERS', 'author');
+    vi.stubEnv('DATABASE_URL', '');
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ login: 'Author' })));
+    const request = new Request('https://scrolltastic.test/api/publish/prepare', { headers: { authorization: 'Bearer github-token' } });
+    await expect(requirePublisher(request, '22222222-2222-4222-8222-222222222222')).resolves.toMatchObject({ publisher: 'author' });
+    vi.stubEnv('SCROLLTASTIC_PUBLISHERS', 'someone-else');
+    await expect(requirePublisher(request, '22222222-2222-4222-8222-222222222222')).rejects.toThrow('not authorized');
   });
 
   it('takes the publishing origin only from user settings and requires HTTPS', () => {

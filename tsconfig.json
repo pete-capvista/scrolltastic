@@ -6,5 +6,5 @@
     "skipLibCheck": true, "noUnusedLocals": true, "noUnusedParameters": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "api", "tests", "*.config.ts"]
+  "include": ["src", "api", "server-api", "tests", "*.config.ts"]
 }

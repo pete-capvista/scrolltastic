@@ -5,7 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 function readerRouting(): Plugin {
   const rewrite = (request: IncomingMessage, _response: ServerResponse, next: () => void) => {
     const path = request.url?.split('?')[0] ?? '';
-    if (path === '/' || /^\/s\/[^/.]+\/?$/.test(path)) request.url = '/index.html';
+    if (path === '/' || /^\/s\/[^/.]+\/?$/.test(path) || /^\/s\/[^/.]+\/edit\/[0-9a-f-]+\/r\/[0-9a-f-]+\/?$/.test(path)) request.url = '/index.html';
     next();
   };
   return {

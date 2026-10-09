@@ -9,7 +9,10 @@ separate implementation plan.
 An authorized editor can open a live story, enter an isolated editing workspace,
 ask an AI assistant for changes, upload artwork, inspect every proposed revision in
 the real renderer, iterate or undo, and explicitly promote one reviewed revision to
-production. The assistant never writes directly to the live package.
+production. The assistant never writes directly to the live package. An authorized
+publisher may explicitly enable Publisher mode for one request; the assistant can
+then record a publication request for an exact validated revision, but the request
+pauses at the existing preview-review and user approval boundary.
 
 The design preserves three boundaries:
 
@@ -132,6 +135,7 @@ list_assets(query?)
 propose_patch(base_revision, operations, explanation)
 ask_clarification(question, candidate_ids)
 propose_memory_update(entries)
+request_publish_approval(revision_id, summary) # Publisher mode only
 ```
 
 `propose_patch` uses internal JSON Patch-like operations with `test` preconditions.
@@ -139,6 +143,10 @@ It is a host protocol, not Story Language. The server applies it to the immutabl
 base, rejects protected identity/version changes, parses and semantically validates
 the result, verifies all assets, and only then creates a new draft revision. The
 model never receives a storage credential or a production commit tool.
+`request_publish_approval` records an auditable request and returns the exact review
+URL. It cannot acknowledge preview or invoke the commit endpoint. Publisher mode is
+authorized server-side with `story:publish`; the browser must still acknowledge the
+exact current revision and explicitly choose **Approve and publish**.
 
 Initially, AI edits should be limited to existing V5 capabilities. If a request
 needs a new Frame type or authored property, the assistant explains that the
@@ -238,7 +246,7 @@ organizations and explicit story memberships:
 | Publisher | yes | yes | yes | yes | approve memory |
 | Owner | yes | yes | yes | yes | yes |
 
-Server-side account configuration selects the allowed gateway/provider models and
+Server-side account configuration selects the allowed provider models and
 sets hard limits for requests per minute, concurrent generations, input/output
 tokens, daily/monthly spend, image uploads, draft storage and active workspaces.
 Before each generation, atomically reserve estimated budget; after completion,
@@ -246,8 +254,9 @@ reconcile actual provider usage and cost. A failed or cancelled call is still lo
 and reconciled. Exceeding a hard limit stops before provider invocation and gives a
 clear reset date or administrator action. No client-provided usage number is trusted.
 
-Provider credentials remain server-side. Route model calls through one configured
-gateway/account so keys, provider failover and cost policy are centralized. Persist
+Provider credentials remain server-side. Route model calls through a narrow
+provider-neutral runner; the initial adapter uses the official OpenAI SDK and a
+server-only project key. Persist
 every generation before calling the model, then store status, model, prompt/context
 digests, tool calls, output, token usage, estimated/actual cost, latency, user,
 workspace and resulting revision. Streaming output is never client-only state.
@@ -298,7 +307,7 @@ flowchart LR
   Authoring --> Store[(Draft/release object storage)]
   Authoring --> Validator[V5 parser + semantic validator]
   Authoring --> AI[AI orchestration]
-  AI --> Gateway[Configured AI gateway/account]
+  AI --> Provider[Configured model provider adapter]
   AI --> DB
   Preview[Draft preview renderer] --> Authoring
   Commit[Promotion service] --> Validator

@@ -1,0 +1,47 @@
+{
+  "storyLanguage": "5",
+  "id": "78222451-dd4b-4a67-b927-89dd832c7bf7",
+  "title": "Untitled Story",
+  "language": "en-NZ",
+  "authoring": {
+    "ai": {
+      "enabled": true
+    }
+  },
+  "body": {
+    "background": "#f6f3ec",
+    "typography": {
+      "font": "story-sans",
+      "size": "medium"
+    },
+    "containers": [
+      {
+        "type": "container",
+        "id": "opening-container",
+        "flow": [
+          {
+            "type": "panel",
+            "id": "opening-panel",
+            "height": "content",
+            "padding": "medium",
+            "frames": [
+              {
+                "type": "narrative",
+                "id": "opening-narrative",
+                "text": "This is where the story begins."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "beats": [
+    {
+      "id": "opening-beat",
+      "target": "opening-narrative",
+      "label": "Opening",
+      "align": "center"
+    }
+  ]
+}

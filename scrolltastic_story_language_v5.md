@@ -1964,6 +1964,21 @@ All project-owned documents migrate directly; no legacy parser is retained.
   permits a supporting host to offer AI authoring when its independent server-side
   account and story policy also authorizes the user. It grants no access, provider,
   model, budget or commit authority; unsupported hosts render the story normally.
+  A host MAY offer an approval-gated publisher assistant to an independently
+  authorized publisher. The assistant may prepare or request publication of an
+  exact validated revision, but preview acknowledgement and the production commit
+  remain explicit host-authorized user actions.
+  A supporting authoring host MAY accumulate validated AI edits in one mutable
+  workspace working draft. Those edits do not create Story Language revisions until
+  the user explicitly accepts them; acceptance creates one immutable validated
+  revision, while discard restores the last accepted revision. Pending working-draft
+  changes MUST block preview acknowledgement and publication. A host MAY also pass an
+  optionally selected rendered Panel ID as authoring context; selection is never
+  required and does not alter the story document.
+  A supporting host MAY generate artwork as an approved draft asset, but generated
+  media is referenced only through the existing `Image` or `Background` Frame
+  vocabulary and follows the same validation, working-draft acceptance, preview,
+  and publication gates as uploaded media.
 - Containers use `flow`, containing typed Panels and first-class `Space`.
   `panels` is not accepted. Space retains its existing explicit height semantics.
 - Frame `normal`, `overlay`, `overflow` and shared physical anchors retain their

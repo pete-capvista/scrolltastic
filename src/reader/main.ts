@@ -1,15 +1,18 @@
 import { mountStory, type StoryHandle } from '../renderer/mount';
 import { StoryValidationError } from '../parser/parse';
-import { loadStoryRoot, resolveStory, storyIdPattern } from './resolve-story';
+import { loadStoryRoot, resolveStory, resolveStoryPackage, storyIdPattern } from './resolve-story';
 import { renderLanding } from './landing';
 import type { ControlsHandle } from '../inputs/controls';
+import type { EditorContext } from '../authoring/client/editor';
 import './reader.css';
 
 const root = document.querySelector<HTMLElement>('#app')!;
+const authoring = document.querySelector<HTMLElement>('#authoring-controls')!;
 let current: StoryHandle | undefined;
 let animations: { destroy(): void } | undefined;
 let controls: ControlsHandle | undefined;
 let request: AbortController | undefined;
+let editor: { destroy(): void } | undefined;
 let revision = 0;
 
 function message(title: string, description: string) {
@@ -26,9 +29,10 @@ function message(title: string, description: string) {
   root.replaceChildren(box);
 }
 
-async function readRoute() {
+async function readRoute(editorContext?: EditorContext) {
   const run = ++revision;
   request?.abort();
+  editor?.destroy(); editor = undefined;
   controls?.destroy();
   controls = undefined;
   animations?.destroy();
@@ -39,6 +43,8 @@ async function readRoute() {
   document.title = 'Scrolltastic';
   root.removeAttribute('aria-busy');
   delete root.dataset.ready;
+  authoring.hidden = true;
+  authoring.replaceChildren();
   const path = location.pathname;
   root.classList.toggle('landing-host', path === '/');
   if (path === '/') {
@@ -46,17 +52,19 @@ async function readRoute() {
     return;
   }
   const match = /^\/s\/([^/]+)\/?$/.exec(path);
-  if (!match || !storyIdPattern.test(match[1])) {
+  const preview = /^\/s\/([^/]+)\/edit\/([0-9a-f-]+)\/r\/([0-9a-f-]+)\/?$/.exec(path);
+  if ((!match && !preview) || !storyIdPattern.test((match ?? preview)![1])) {
     message('Story not found', 'Check the story link and try again.');
     return;
   }
-  const id = match[1];
+  const id = (match ?? preview)![1];
   message('Opening your story…', 'One moment.');
   root.setAttribute('aria-busy', 'true');
   try {
-    const storyRoot = await loadStoryRoot(request.signal);
-    if (run !== revision) return;
-    const { document, assetBaseUrl, diagnostics } = await resolveStory(id, storyRoot, location.origin, request.signal);
+    const resolved = preview
+      ? await resolveStoryPackage(id, `/api/workspaces/${preview[2]}/revisions/${preview[3]}/package/`, location.origin, request.signal)
+      : await resolveStory(id, await loadStoryRoot(request.signal), location.origin, request.signal);
+    const { document, assetBaseUrl, diagnostics } = resolved;
     if (run !== revision) return;
     if (import.meta.env.DEV && diagnostics.length) console.warn('Scrolltastic story diagnostics', diagnostics);
     current = mountStory(root, document, { assetBaseUrl, viewportBottomInset: () => controls?.height ?? 0 });
@@ -75,6 +83,64 @@ async function readRoute() {
     }
     window.document.title = `${document.title} · Scrolltastic`;
     root.dataset.ready = 'true';
+    if (preview) {
+      const { attachEditor } = await import('../authoring/client/editor');
+      if (run !== revision) return;
+      editor = await attachEditor(
+        window.document.querySelector<HTMLElement>('#editor-shell')!, document, current, preview[2], preview[3],
+        async context => readRoute(context),
+        editorContext,
+      );
+    }
+    if (!preview && document.authoring?.ai.enabled) {
+      void fetch(`/api/stories/${id}/capabilities`, { credentials: 'same-origin', cache: 'no-store' })
+        .then(async response => response.ok ? response.json() as Promise<{ authenticated?: boolean; authoring?: { canEdit?: boolean } }> : undefined)
+        .then(async capabilities => {
+          if (!capabilities || run !== revision) return;
+          const setStatus = (message: string) => {
+            let status = authoring.querySelector<HTMLElement>('[role="status"]');
+            if (!status) { status = window.document.createElement('span'); status.setAttribute('role', 'status'); authoring.append(status); }
+            status.textContent = message;
+          };
+          if (!capabilities.authenticated) {
+            const signIn = window.document.createElement('button');
+            signIn.type = 'button'; signIn.textContent = 'Sign in with Nostr';
+            signIn.addEventListener('click', async () => {
+              signIn.disabled = true; setStatus('Waiting for your Nostr signer…');
+              try { const { signInWithNostr } = await import('../auth/nostr-client'); await signInWithNostr(location.pathname); }
+              catch (error) { signIn.disabled = false; setStatus(error instanceof Error ? error.message : 'Nostr authentication failed.'); }
+            });
+            authoring.append(signIn); authoring.hidden = false; return;
+          }
+          const signOut = window.document.createElement('button');
+          signOut.type = 'button'; signOut.textContent = 'Sign out';
+          signOut.addEventListener('click', async () => {
+            signOut.disabled = true;
+            try { const { signOut } = await import('../auth/nostr-client'); await signOut(); }
+            catch (error) { signOut.disabled = false; setStatus(error instanceof Error ? error.message : 'Sign out failed.'); }
+          });
+          if (!capabilities.authoring?.canEdit) {
+            authoring.append(signOut); authoring.hidden = false; return;
+          }
+          const button = window.document.createElement('button');
+          button.type = 'button';
+          button.textContent = 'Edit';
+          button.addEventListener('click', async () => {
+            button.disabled = true;
+            try {
+              const response = await fetch(`/api/stories/${id}/workspaces`, { method: 'POST', credentials: 'same-origin' });
+              if (!response.ok) throw new Error('The editing workspace could not be opened.');
+              const result = await response.json() as { workspace: { id: string; currentRevisionId: string } };
+              location.assign(`/s/${id}/edit/${result.workspace.id}/r/${result.workspace.currentRevisionId}`);
+            } catch (error) {
+              button.disabled = false;
+              button.setAttribute('aria-label', error instanceof Error ? error.message : 'The editing workspace could not be opened.');
+            }
+          });
+          authoring.append(button, signOut);
+          authoring.hidden = false;
+        }).catch(() => {});
+    }
   } catch (error) {
     if (run !== revision || (error instanceof DOMException && error.name === 'AbortError')) return;
     controls?.destroy();
@@ -96,7 +162,8 @@ async function readRoute() {
     if (run === revision) root.removeAttribute('aria-busy');
   }
 }
-window.addEventListener('popstate', readRoute);
+const handlePopState = () => void readRoute();
+window.addEventListener('popstate', handlePopState);
 void readRoute();
 if (import.meta.hot) import.meta.hot.dispose(() => {
   revision++;
@@ -105,5 +172,6 @@ if (import.meta.hot) import.meta.hot.dispose(() => {
   controls = undefined;
   animations?.destroy();
   current?.destroy();
-  window.removeEventListener('popstate', readRoute);
+  editor?.destroy();
+  window.removeEventListener('popstate', handlePopState);
 });

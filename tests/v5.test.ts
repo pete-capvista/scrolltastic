@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { parseStory, validateStory } from '../src/parser/parse';
-import { loadStoryRoot, packageUrl, resolveStory } from '../src/reader/resolve-story';
+import { loadStoryRoot, packageUrl, resolveStory, resolveStoryPackage } from '../src/reader/resolve-story';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const fixture = () => JSON.parse(readFileSync(`public/stories/${id}/story.json`, 'utf8'));
@@ -62,6 +62,13 @@ describe('V5 language', () => {
   });
 });
 describe('portable reader resolution', () => {
+  it('loads an authenticated exact draft package without appending a production story path', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(fixture()), { headers: { 'content-type': 'application/json' } }));
+    const base = `/api/workspaces/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/revisions/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/package/`;
+    const result = await resolveStoryPackage(id, base, 'https://reader.example.test/', new AbortController().signal, fetcher);
+    expect(result.assetBaseUrl).toBe(`https://reader.example.test${base}`);
+    expect(fetcher).toHaveBeenCalledWith(`${result.assetBaseUrl}story.json`, expect.objectContaining({ credentials: 'same-origin' }));
+  });
   it('prefers the host-owned deployment root over the static fallback', async () => {
     const fetcher = vi.spyOn(globalThis, 'fetch');
     await expect(loadStoryRoot(new AbortController().signal, 'https://blob.example.test/')).resolves.toBe('https://blob.example.test/');

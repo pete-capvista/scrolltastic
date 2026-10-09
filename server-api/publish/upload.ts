@@ -5,16 +5,15 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const body = await request.json() as HandleUploadBody;
     let publisher: string | undefined;
-    if (body.type === 'blob.generate-client-token') publisher = await requirePublisher(request);
     const response = await handleUpload({
       request, body, token: blobToken(),
       onBeforeGenerateToken: async (pathname, clientPayload) => {
-        if (!publisher) throw new PublishError(401, 'unauthenticated', 'Sign in with GitHub to publish.');
         let payload: unknown;
         try { payload = JSON.parse(clientPayload ?? ''); } catch { throw new PublishError(400, 'invalid_manifest', 'The upload request is invalid.'); }
         if (!payload || typeof payload !== 'object') throw new PublishError(400, 'invalid_manifest', 'The upload request is invalid.');
         const record = payload as Record<string, unknown>;
         const claims = verifyClaims<UploadClaims>(record.uploadTicket, 'upload');
+        publisher ??= (await requirePublisher(request, claims.storyId)).publisher;
         if (claims.publisher !== publisher) throw new PublishError(403, 'forbidden', 'This upload belongs to another publisher.');
         const expected = `${stagingPrefix(claims.publisher, claims.publishId, claims.storyId)}${claims.file.path}`;
         if (pathname !== expected) throw new PublishError(400, 'invalid_manifest', 'The upload pathname is invalid.');
