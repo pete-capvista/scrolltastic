@@ -52,9 +52,9 @@ describe('VS Code live story download', () => {
 
   it('ignores workspace overrides for the trusted live story root', () => {
     const vscode = {
-      workspace: { getConfiguration: () => ({ inspect: () => ({ globalValue: undefined, workspaceValue: 'https://evil.example/', defaultValue: 'https://scrolltastic.vercel.app/stories/' }) }) },
+      workspace: { getConfiguration: () => ({ inspect: () => ({ globalValue: undefined, workspaceValue: 'https://evil.example/', defaultValue: 'https://www.scrolltastic.com/stories/' }) }) },
     };
-    expect(downloader.downloadStoryRoot(vscode)).toBe('https://scrolltastic.vercel.app/stories/');
+    expect(downloader.downloadStoryRoot(vscode)).toBe('https://www.scrolltastic.com/stories/');
     expect(() => downloader.downloadStoryRoot({
       workspace: { getConfiguration: () => ({ inspect: () => ({ globalValue: 'http://example.test/stories/' }) }) },
     })).toThrow('HTTPS directory URL');

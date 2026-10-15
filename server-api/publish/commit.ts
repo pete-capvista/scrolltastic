@@ -69,7 +69,7 @@ export async function POST(request: Request): Promise<Response> {
     }
     return Response.json({
       storyId, publishId, releaseId: publishId, revision: publishedStory!.etag,
-      readerUrl: `https://scrolltastic.vercel.app/s/${storyId}`, files: files.length,
+      readerUrl: `https://www.scrolltastic.com/s/${storyId}`, files: files.length,
       bytes: files.reduce((sum, file) => sum + file.size, 0), inventoryRecorded,
     });
   } catch (error) { return errorResponse(error); }

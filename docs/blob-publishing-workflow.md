@@ -184,7 +184,7 @@ global consistency.
 
 On success, VS Code offers:
 
-- **Open Published Story** — `https://scrolltastic.vercel.app/s/<story-id>`
+- **Open Published Story** — `https://www.scrolltastic.com/s/<story-id>`
 - **Copy Story Link**
 - **View Output** — release ID, revision, files and byte totals
 

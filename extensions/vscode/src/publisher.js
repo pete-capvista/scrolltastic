@@ -91,7 +91,7 @@ async function postJson(url, token, body) {
 
 function publishingApiBase(vscode) {
   const inspected = vscode.workspace.getConfiguration('scrolltastic').inspect('publish.apiBaseUrl');
-  const configured = inspected?.globalValue ?? inspected?.defaultValue ?? 'https://scrolltastic.vercel.app';
+  const configured = inspected?.globalValue ?? inspected?.defaultValue ?? 'https://www.scrolltastic.com';
   let url;
   try { url = new URL(configured); } catch { throw new Error('The publishing API URL is invalid.'); }
   if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {

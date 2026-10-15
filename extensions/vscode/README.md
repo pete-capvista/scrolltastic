@@ -33,12 +33,12 @@ folder named with the story UUID, then opens it with a live preview. If that fol
 already exists, the extension asks before replacing it and first saves the complete
 old folder as a timestamped ZIP in the parent's `archive/` folder.
 
-Publishing defaults to `https://scrolltastic.vercel.app`. A different trusted
+Publishing defaults to `https://www.scrolltastic.com`. A different trusted
 HTTPS origin can be set as `scrolltastic.publish.apiBaseUrl` in VS Code user
 settings. Workspace values are ignored to prevent a story package from
 redirecting GitHub credentials.
 The corresponding live package root defaults to
-`https://scrolltastic.vercel.app/stories/` and can be changed with the user-level
+`https://www.scrolltastic.com/stories/` and can be changed with the user-level
 `scrolltastic.download.storyRootUrl` setting; workspace values are likewise ignored.
 
 The preview runs the same parser, renderer, animation and Beat navigation code

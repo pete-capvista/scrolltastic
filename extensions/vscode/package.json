@@ -136,13 +136,13 @@
         },
         "scrolltastic.publish.apiBaseUrl": {
           "type": "string",
-          "default": "https://scrolltastic.vercel.app",
+          "default": "https://www.scrolltastic.com",
           "scope": "window",
           "description": "Trusted HTTPS Scrolltastic publishing API origin. Set this in user settings; workspace values are ignored so a story package cannot redirect your GitHub credential."
         },
         "scrolltastic.download.storyRootUrl": {
           "type": "string",
-          "default": "https://scrolltastic.vercel.app/stories/",
+          "default": "https://www.scrolltastic.com/stories/",
           "scope": "window",
           "description": "Trusted HTTPS root containing live story packages. Set this in user settings; workspace values are ignored."
         }

@@ -8,7 +8,7 @@ const MAX_PACKAGE_BYTES = 100 * 1024 * 1024;
 
 function downloadStoryRoot(vscode) {
   const inspected = vscode.workspace.getConfiguration('scrolltastic').inspect('download.storyRootUrl');
-  const configured = inspected?.globalValue ?? inspected?.defaultValue ?? 'https://scrolltastic.vercel.app/stories/';
+  const configured = inspected?.globalValue ?? inspected?.defaultValue ?? 'https://www.scrolltastic.com/stories/';
   let url;
   try { url = new URL(configured); } catch { throw new Error('The live story URL is invalid.'); }
   if (url.protocol !== 'https:' || url.username || url.password || !url.pathname.endsWith('/') || url.search || url.hash) {

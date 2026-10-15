@@ -82,10 +82,10 @@ describe('publishing package contract', () => {
   });
 
   it('takes the publishing origin only from user settings and requires HTTPS', () => {
-    const vscode = (globalValue: unknown, defaultValue = 'https://scrolltastic.vercel.app') => ({
+    const vscode = (globalValue: unknown, defaultValue = 'https://www.scrolltastic.com') => ({
       workspace: { getConfiguration: () => ({ inspect: () => ({ globalValue, workspaceValue: 'https://evil.example', defaultValue }) }) },
     });
-    expect(publisher.publishingApiBase(vscode(undefined))).toBe('https://scrolltastic.vercel.app');
+    expect(publisher.publishingApiBase(vscode(undefined))).toBe('https://www.scrolltastic.com');
     expect(publisher.publishingApiBase(vscode('https://preview.example'))).toBe('https://preview.example');
     expect(() => publisher.publishingApiBase(vscode('http://preview.example'))).toThrow('HTTPS origin');
     expect(() => publisher.publishingApiBase(vscode('https://example.test/api'))).toThrow('HTTPS origin');
