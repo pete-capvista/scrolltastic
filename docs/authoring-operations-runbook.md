@@ -1,5 +1,27 @@
 # Browser authoring operations runbook
 
+## Short-lived revision sharing
+
+An authorized publisher can create an expiring share for an exact workspace
+revision with `POST /api/workspaces/:workspaceId/revisions/:revisionId/shares`.
+The JSON body may contain `lifetimeSeconds`; the accepted range is 60 seconds to
+24 hours and the default is 30 minutes. The returned `/share#token` URL is a
+bearer secret and must not be stored in story content. Its fragment is deliberately
+kept out of HTTP requests, referrer data, and platform request-path logs.
+
+Opening the link exchanges the raw token in a same-origin request body for a Secure,
+HttpOnly, SameSite=Lax cookie, clears the fragment, and navigates to
+`/s/:storyId/shared/:grantId`. Package requests remain
+same-origin, are authorized independently, and return `private, no-store`.
+Only the SHA-256 token digest is persisted. A publisher can revoke a grant with
+`DELETE /api/shares/:grantId`; expiry and revocation take effect on the next
+document or asset request.
+
+Shares expose the selected immutable revision. They do not make an already
+public production package private: a story present in the public repository or
+public Blob store remains independently downloadable and must be migrated or
+removed separately before it can be treated as confidential.
+
 This runbook covers browser authoring incidents. The continuous reader and the
 legacy VS Code publisher remain separate surfaces.
 

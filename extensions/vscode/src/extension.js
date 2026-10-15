@@ -4,6 +4,7 @@ const path = require('node:path');
 const { realpath } = require('node:fs/promises');
 const { collectStoryAssetPaths, isStoryAssetPath } = require('./package-path');
 const { publishStory } = require('./publisher');
+const { createShareLink } = require('./sharer');
 const { downloadLiveStory } = require('./downloader');
 
 const TEXT_DEBOUNCE = 300;
@@ -234,6 +235,15 @@ function activate(context) {
     catch (error) {
       publishOutput.appendLine(`[${new Date().toISOString()}] Publish failed: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
       void vscode.window.showErrorMessage(error instanceof Error ? error.message : 'The story could not be published.');
+    }
+  });
+  registerCommand(context, 'scrolltastic.createShareLink', async () => {
+    try {
+      const { publishingApiBase } = require('./publisher');
+      await createShareLink(vscode, vscode.window.activeTextEditor?.document, publishingApiBase(vscode));
+    } catch (error) {
+      publishOutput.appendLine(`[${new Date().toISOString()}] Share link failed: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
+      void vscode.window.showErrorMessage(error instanceof Error ? error.message : 'The share link could not be created.');
     }
   });
   registerCommand(context, 'scrolltastic.downloadStory', async () => {

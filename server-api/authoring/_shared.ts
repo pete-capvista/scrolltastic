@@ -1,7 +1,7 @@
 import { authenticateRequest, AuthenticationError } from '../../src/auth/identity.js';
 import type { Principal, StoryAction } from '../../src/auth/model.js';
 import { canStory } from '../../src/auth/policy.js';
-import { storyMembershipRepository, storyOrganizationId } from '../../src/persistence/postgres.js';
+import { storyMembershipRepository, storyOrganizationId, upsertAccount } from '../../src/persistence/postgres.js';
 import { workspaceSummary, type WorkspaceSummary } from '../../src/authoring/workspace-repository.js';
 import { RequestSecurityError, requireTrustedMutationOrigin } from '../../src/auth/request-security.js';
 import { authoringRolloutDecision } from '../../src/auth/rollout.js';
@@ -36,7 +36,11 @@ export async function requireAccount(request: Request): Promise<Principal & { ac
     if (error instanceof AuthenticationError) throw new AuthoringError(error.status, 'unauthenticated', error.message);
     throw error;
   }
-  if (!principal?.accountId) throw new AuthoringError(401, 'unauthenticated', 'Sign in to use browser authoring.');
+  if (!principal) throw new AuthoringError(401, 'unauthenticated', 'Sign in to use authoring.');
+  if (!principal.accountId) {
+    try { principal = await upsertAccount(principal); }
+    catch { throw new AuthoringError(503, 'authentication_unavailable', 'Account persistence is unavailable.'); }
+  }
   return principal as Principal & { accountId: string };
 }
 

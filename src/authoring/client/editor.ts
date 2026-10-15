@@ -451,7 +451,36 @@ export async function attachEditor(
   });
   commit.disabled = !acknowledged;
   commit.hidden = !canPublish;
-  actions.append(acknowledge, commit);
+  const shareOutput = document.createElement('div'); shareOutput.className = 'editor-share-output'; shareOutput.hidden = true;
+  const createShare = button('Create 30-minute share link', async () => {
+    createShare.disabled = true; shareOutput.hidden = true; shareOutput.replaceChildren();
+    try {
+      const result = await json<{ share: { id: string; url: string; expiresAt: string } }>(
+        `/api/workspaces/${workspaceId}/revisions/${revisionId}/shares`,
+        { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' },
+      );
+      const label = document.createElement('label'); label.textContent = `Expires ${new Date(result.share.expiresAt).toLocaleString()}`;
+      const value = document.createElement('input'); value.type = 'text'; value.readOnly = true; value.value = result.share.url;
+      value.setAttribute('aria-label', 'Short-lived story share link');
+      const copy = button('Copy link', async () => {
+        try { await navigator.clipboard.writeText(value.value); status.textContent = 'Share link copied.'; }
+        catch { value.select(); status.textContent = 'Copy is unavailable. Select and copy the link manually.'; }
+      });
+      const revoke = button('Revoke link', async () => {
+        revoke.disabled = true;
+        try {
+          await json(`/api/shares/${result.share.id}`, { method: 'DELETE' });
+          shareOutput.replaceChildren(); shareOutput.hidden = true; status.textContent = 'Share link revoked.';
+        } catch (error) { revoke.disabled = false; status.textContent = error instanceof Error ? error.message : 'Revocation failed.'; }
+      });
+      shareOutput.append(label, value, copy, revoke); shareOutput.hidden = false;
+      status.textContent = 'A short-lived link was created. Anyone with the link can read this revision until it expires or is revoked.';
+    } catch (error) { status.textContent = error instanceof Error ? error.message : 'Share creation failed.'; }
+    finally { createShare.disabled = workspace.hasPendingChanges; }
+  });
+  createShare.disabled = workspace.hasPendingChanges;
+  createShare.hidden = !canPublish;
+  actions.append(acknowledge, commit, createShare, shareOutput);
   const advanced = document.createElement('details'); advancedControls = advanced; advanced.className = 'editor-advanced';
   const advancedSummary = document.createElement('summary'); advancedSummary.textContent = 'Advanced';
   advanced.append(advancedSummary, assets, memory, history, actions);

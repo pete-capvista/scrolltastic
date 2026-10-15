@@ -48,6 +48,10 @@
         "title": "Scrolltastic: Publish Story"
       },
       {
+        "command": "scrolltastic.createShareLink",
+        "title": "Scrolltastic: Create 30-Minute Share Link"
+      },
+      {
         "command": "scrolltastic.downloadStory",
         "title": "Scrolltastic: Download Live Story"
       },
@@ -78,6 +82,11 @@
           "command": "scrolltastic.publishStory",
           "when": "resourceLangId == json && isWorkspaceTrusted",
           "group": "navigation@0"
+        },
+        {
+          "command": "scrolltastic.createShareLink",
+          "when": "resourceLangId == json && isWorkspaceTrusted",
+          "group": "navigation@0.25"
         },
         {
           "command": "scrolltastic.downloadStory",

@@ -164,6 +164,38 @@ export async function revisionPackageEntry(workspaceId: string, revisionId: stri
   return { kind: 'asset', storagePath: `${row.storage_prefix}${path}`, contentType: file.contentType, digest: file.sha256, storage: 'production' };
 }
 
+/** Resolve an accepted revision against the production release it was based on.
+ * Unlike editor preview resolution, this never substitutes mutable working-draft data. */
+export async function sharedRevisionPackageEntry(workspaceId: string, revisionId: string, baseReleaseId: string, path: string): Promise<
+  | { kind: 'document'; document: unknown; digest: string }
+  | { kind: 'asset'; storagePath: string; contentType: string; digest: string; storage: 'production' | 'draft' }
+  | undefined
+> {
+  const rows = await requiredDatabase()<{
+    document_json: unknown; document_digest: string;
+    manifest_json: { path: string; contentType: string; sha256: string }[]; storage_prefix: string;
+  }[]>`
+    select dr.document_json, dr.document_digest, dr.manifest_json, pr.storage_prefix
+    from draft_revisions dr
+    join production_releases pr on pr.id = ${baseReleaseId}::uuid and pr.story_id = (
+      select story_id from draft_workspaces where id = ${workspaceId}::uuid
+    )
+    where dr.id = ${revisionId}::uuid and dr.workspace_id = ${workspaceId}::uuid`;
+  const row = rows[0];
+  if (!row) return undefined;
+  if (path === 'story.json') return { kind: 'document', document: row.document_json, digest: row.document_digest };
+  const file = row.manifest_json.find(item => item.path === path);
+  if (!file) return undefined;
+  const assets = await requiredDatabase()<{ storage_path: string; content_type: string; digest: string }[]>`
+    select a.storage_key as storage_path, a.media_type as content_type, a.digest
+    from revision_assets ra join assets a on a.id = ra.asset_id
+    where ra.revision_id = ${revisionId}::uuid and ra.logical_path = ${path}
+      and a.workspace_id = ${workspaceId}::uuid and a.scan_status = 'approved' and a.retired_at is null`;
+  const asset = assets[0];
+  if (asset) return { kind: 'asset', storagePath: asset.storage_path, contentType: asset.content_type, digest: asset.digest, storage: 'draft' };
+  return { kind: 'asset', storagePath: `${row.storage_prefix}${path}`, contentType: file.contentType, digest: file.sha256, storage: 'production' };
+}
+
 export async function acknowledgePreview(workspaceId: string, revisionId: string, actor: Principal & { accountId: string }): Promise<void> {
   const sql = requiredDatabase();
   await sql.begin(async transaction => {

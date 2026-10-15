@@ -26,9 +26,13 @@ import * as revisionPreviewAck from '../server-api/workspaces/[id]/revisions/[re
 import * as revisionRestore from '../server-api/workspaces/[id]/revisions/[revisionId]/restore.js';
 import * as revisionStory from '../server-api/workspaces/[id]/revisions/[revisionId]/story.js';
 import * as workspaceRevisions from '../server-api/workspaces/[id]/revisions/index.js';
+import * as revisionShares from '../server-api/workspaces/[id]/revisions/[revisionId]/shares.js';
 import * as workspaceTestMutation from '../server-api/workspaces/[id]/test-mutation.js';
 import * as uploadComplete from '../server-api/workspaces/[id]/uploads/complete.js';
 import * as uploadPrepare from '../server-api/workspaces/[id]/uploads/prepare.js';
+import * as shareRedeem from '../server-api/shares/redeem.js';
+import * as share from '../server-api/shares/[id]/index.js';
+import * as sharedPackage from '../server-api/shared-stories/[storyId]/[grantId]/package/[...path].js';
 
 type Handler = (request: Request) => Promise<Response>;
 type Methods = Partial<Record<'GET' | 'POST' | 'DELETE', Handler>>;
@@ -49,6 +53,9 @@ const routes: readonly [RegExp, Methods][] = [
   [/^\/api\/stories\/[^/]+\/memory$/, storyMemory],
   [/^\/api\/stories\/[^/]+\/operations$/, storyOperations],
   [/^\/api\/stories\/[^/]+\/workspaces$/, storyWorkspaces],
+  [/^\/api\/shares\/redeem$/, shareRedeem],
+  [/^\/api\/shares\/[^/]+$/, share],
+  [/^\/api\/shared-stories\/[^/]+\/[^/]+\/package\/.+$/, sharedPackage],
   [/^\/api\/workspaces\/[^/]+\/assets\/[^/]+\/content$/, workspaceAssetContent],
   [/^\/api\/workspaces\/[^/]+\/assets$/, workspaceAssets],
   [/^\/api\/workspaces\/[^/]+\/accept$/, workspaceAccept],
@@ -60,6 +67,7 @@ const routes: readonly [RegExp, Methods][] = [
   [/^\/api\/workspaces\/[^/]+\/revisions\/[^/]+\/preview-ack$/, revisionPreviewAck],
   [/^\/api\/workspaces\/[^/]+\/revisions\/[^/]+\/restore$/, revisionRestore],
   [/^\/api\/workspaces\/[^/]+\/revisions\/[^/]+\/story$/, revisionStory],
+  [/^\/api\/workspaces\/[^/]+\/revisions\/[^/]+\/shares$/, revisionShares],
   [/^\/api\/workspaces\/[^/]+\/revisions$/, workspaceRevisions],
   [/^\/api\/workspaces\/[^/]+\/test-mutation$/, workspaceTestMutation],
   [/^\/api\/workspaces\/[^/]+\/uploads\/complete$/, uploadComplete],

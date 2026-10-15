@@ -20,6 +20,12 @@ verifies the manifest and story again before atomically committing the stable
 story document. Concurrent changes produce an explicit overwrite confirmation.
 The Blob credential is never sent to or stored by the extension.
 
+Run **Scrolltastic: Create 30-Minute Share Link** with a V5 `story.json` open to
+create a revocable link for the story's current accepted server revision. The
+extension signs in with the same GitHub identity, resumes the server workspace,
+copies the fragment-based bearer link to the clipboard, and offers to open or
+immediately revoke it. Unsaved and local-only edits are not uploaded or included.
+
 Run **Scrolltastic: Download Live Story** to resume from the currently published
 version. Enter its UUID or reader URL and choose a local parent folder. The command
 downloads the validated live `story.json` and every referenced asset into a new

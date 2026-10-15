@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 import { validateStory } from '../src/parser/parse';
@@ -6,6 +6,9 @@ import { resolveMappedAsset } from '../src/assets/resolve';
 import { collectStoryAssetPaths, isStoryAssetPath } from '../extensions/vscode/src/package-path.js';
 import archive from '../extensions/vscode/src/archive.js';
 import downloader from '../extensions/vscode/src/downloader.js';
+import sharer from '../extensions/vscode/src/sharer.js';
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('VS Code story package assets', () => {
   it('accepts only package-relative media paths supported by Story Language V5', () => {
@@ -65,6 +68,58 @@ describe('VS Code live story download', () => {
     const compressed = zip.subarray(30 + nameLength, 30 + nameLength + compressedLength);
     expect(inflateRawSync(compressed).toString()).toBe('{"title":"old"}');
     expect(zip.readUInt32LE(zip.length - 22)).toBe(0x06054b50);
+  });
+});
+
+describe('VS Code revision sharing', () => {
+  it('accepts only an open V5 story document with a UUID', () => {
+    const document = {
+      uri: { path: '/stories/example/story.json' }, languageId: 'json',
+      getText: () => JSON.stringify({ storyLanguage: '5', id: '550e8400-e29b-41d4-a716-446655440000', title: 'Example' }),
+    };
+    expect(sharer.storyIdentity(document)).toEqual({ id: '550e8400-e29b-41d4-a716-446655440000', title: 'Example' });
+    expect(() => sharer.storyIdentity({ ...document, getText: () => '{}' })).toThrow('V5 story');
+    expect(() => sharer.storyIdentity({ ...document, uri: { path: '/stories/example/other.json' } })).toThrow('story.json');
+  });
+
+  it('resumes the server workspace, creates a share, and copies only the returned link', async () => {
+    const document = {
+      isDirty: false, uri: { path: '/stories/example/story.json' }, languageId: 'json',
+      getText: () => JSON.stringify({ storyLanguage: '5', id: '550e8400-e29b-41d4-a716-446655440000', title: 'Example' }),
+    };
+    const copied: string[] = [];
+    const requests: { url: string; init?: RequestInit }[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      requests.push({ url, init });
+      if (url.endsWith('/workspaces')) return Response.json({ workspace: {
+        id: '11111111-1111-4111-8111-111111111111', currentRevisionId: '22222222-2222-4222-8222-222222222222',
+      } });
+      return Response.json({ share: {
+        id: '33333333-3333-4333-8333-333333333333', url: 'https://scrolltastic.test/share#opaque', expiresAt: '2026-10-15T08:00:00Z',
+      } });
+    }));
+    const vscode = {
+      workspace: { isTrusted: true },
+      authentication: { getSession: async () => ({ accessToken: 'github-token' }) },
+      env: { clipboard: { writeText: async (value: string) => { copied.push(value); } }, openExternal: vi.fn() },
+      window: { showInformationMessage: async () => undefined, showWarningMessage: async () => undefined },
+      Uri: { parse: (value: string) => value },
+    };
+    await sharer.createShareLink(vscode, document, 'https://scrolltastic.test');
+    expect(requests.map(request => request.url)).toEqual([
+      'https://scrolltastic.test/api/stories/550e8400-e29b-41d4-a716-446655440000/workspaces',
+      'https://scrolltastic.test/api/workspaces/11111111-1111-4111-8111-111111111111/revisions/22222222-2222-4222-8222-222222222222/shares',
+    ]);
+    expect(requests.every(request => new Headers(request.init?.headers).get('origin') === 'https://scrolltastic.test')).toBe(true);
+    expect(copied).toEqual(['https://scrolltastic.test/share#opaque']);
+  });
+
+  it('registers a trusted-workspace share command without persisting bearer links', () => {
+    const manifest = JSON.parse(readFileSync('extensions/vscode/package.json', 'utf8'));
+    expect(manifest.contributes.commands).toContainEqual(expect.objectContaining({ command: 'scrolltastic.createShareLink' }));
+    const source = readFileSync('extensions/vscode/src/extension.js', 'utf8');
+    expect(source).toContain("registerCommand(context, 'scrolltastic.createShareLink'");
+    expect(source).not.toContain('globalState.update(share');
   });
 });
 

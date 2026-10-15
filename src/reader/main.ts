@@ -47,22 +47,49 @@ async function readRoute(editorContext?: EditorContext) {
   authoring.replaceChildren();
   const path = location.pathname;
   root.classList.toggle('landing-host', path === '/');
+  if (path === '/share' || path === '/share/') {
+    const token = location.hash.slice(1);
+    history.replaceState(null, '', '/share');
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+      message('Share link unavailable', 'This share link is invalid or incomplete.');
+      return;
+    }
+    message('Opening shared story…', 'One moment.');
+    root.setAttribute('aria-busy', 'true');
+    try {
+      const response = await fetch('/api/shares/redeem', {
+        method: 'POST', credentials: 'same-origin', cache: 'no-store', redirect: 'error',
+        headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }), signal: request.signal,
+      });
+      const result = await response.json().catch(() => undefined) as { readerUrl?: string; error?: { message?: string } } | undefined;
+      if (!response.ok || !result?.readerUrl) throw new Error(result?.error?.message ?? 'This share link could not be opened.');
+      location.replace(result.readerUrl);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      message('Share link unavailable', error instanceof Error ? error.message : 'This share link could not be opened.');
+      root.removeAttribute('aria-busy');
+    }
+    return;
+  }
   if (path === '/') {
     renderLanding(root);
     return;
   }
   const match = /^\/s\/([^/]+)\/?$/.exec(path);
   const preview = /^\/s\/([^/]+)\/edit\/([0-9a-f-]+)\/r\/([0-9a-f-]+)\/?$/.exec(path);
-  if ((!match && !preview) || !storyIdPattern.test((match ?? preview)![1])) {
+  const shared = /^\/s\/([^/]+)\/shared\/([0-9a-f-]+)\/?$/.exec(path);
+  if ((!match && !preview && !shared) || !storyIdPattern.test((match ?? preview ?? shared)![1])) {
     message('Story not found', 'Check the story link and try again.');
     return;
   }
-  const id = (match ?? preview)![1];
+  const id = (match ?? preview ?? shared)![1];
   message('Opening your story…', 'One moment.');
   root.setAttribute('aria-busy', 'true');
   try {
     const resolved = preview
       ? await resolveStoryPackage(id, `/api/workspaces/${preview[2]}/revisions/${preview[3]}/package/`, location.origin, request.signal)
+      : shared
+        ? await resolveStoryPackage(id, `/api/shared-stories/${id}/${shared[2]}/package/`, location.origin, request.signal)
       : await resolveStory(id, await loadStoryRoot(request.signal), location.origin, request.signal);
     const { document, assetBaseUrl, diagnostics } = resolved;
     if (run !== revision) return;
@@ -92,7 +119,7 @@ async function readRoute(editorContext?: EditorContext) {
         editorContext,
       );
     }
-    if (!preview && document.authoring?.ai.enabled) {
+    if (!preview && !shared && document.authoring?.ai.enabled) {
       void fetch(`/api/stories/${id}/capabilities`, { credentials: 'same-origin', cache: 'no-store' })
         .then(async response => response.ok ? response.json() as Promise<{ authenticated?: boolean; authoring?: { canEdit?: boolean } }> : undefined)
         .then(async capabilities => {
